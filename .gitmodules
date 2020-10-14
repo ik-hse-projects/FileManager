@@ -1,0 +1,4 @@
+[submodule "Thuja"]
+	path = Thuja
+	url = ../Thuja
+	branch = filemanager
