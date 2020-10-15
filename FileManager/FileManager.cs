@@ -11,12 +11,19 @@ namespace FileManager
         /// </summary>
         private DirectoryInfo currentDirectory;
 
-        private readonly StackContainer list;
+        public StackContainer List { get; }
+        public StackContainer Selected { get; }
+        public Label Header { get; }
 
-        public FileManager(StackContainer list)
+        private readonly int panelWidth;
+
+        public FileManager(int maxWidth, int maxHeight)
         {
             currentDirectory = null;
-            this.list = list;
+            panelWidth = (maxWidth / 2) - 2;
+            List = new StackContainer(Orientation.Vertical, maxVisibleCount: maxHeight - 3);
+            Header = new Label("", maxWidth);
+            Selected = new StackContainer(Orientation.Vertical, maxVisibleCount: maxHeight - 3);
         }
 
         private Action CreateAddAction(FileSystemInfo entry)
@@ -32,14 +39,14 @@ namespace FileManager
                 return;
             }
 
-            list.Add(new Button("..")
+            List.Add(new Button("..")
             {
                 {new KeySelector(ConsoleKey.Enter), () => ChangeDir(currentDirectory.Parent?.FullName)}
             });
             foreach (var entry in currentDirectory.GetFileSystemInfos())
             {
                 var action = CreateAddAction(entry);
-                var button = new Button("", 38)
+                var button = new Button("", panelWidth)
                 {
                     {new KeySelector(ConsoleKey.Insert), action},
                     {new KeySelector(ConsoleKey.Spacebar), action}
@@ -59,7 +66,7 @@ namespace FileManager
                     button.Text = $"{entry.Name} (?)";
                 }
 
-                list.Add(button);
+                List.Add(button);
             }
         }
 
@@ -78,12 +85,13 @@ namespace FileManager
                 }
             }
 
+            Header.Text = currentDirectory?.FullName ?? "";
             UpdateList();
         }
 
         private void UpdateList()
         {
-            list.Clear();
+            List.Clear();
             if (currentDirectory != null)
             {
                 UpdateCurrentDir();
@@ -92,11 +100,11 @@ namespace FileManager
             {
                 foreach (var drive in Directory.GetLogicalDrives())
                 {
-                    var button = new Button(drive, 38)
+                    var button = new Button(drive, panelWidth)
                     {
                         {new KeySelector(ConsoleKey.Enter), () => ChangeDir(drive)}
                     };
-                    list.Add(button);
+                    List.Add(button);
                 }
             }
         }

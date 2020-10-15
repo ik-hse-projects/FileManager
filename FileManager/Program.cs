@@ -22,8 +22,7 @@ namespace FileManager
                 new Label(" освоился, раз смог выбрать много файлов"),
                 new Label(" и значит справка ему больше не нужна.  "),
                 new Label("           Выбор файлов:                ") {CurrentStyle = Style.Active},
-                new Label("Большинство действий затрагивают только "),
-                new Label("  явно выбранные файлы. Используйте Ins!"),
+                new Label("!Не забывайте выбирать файлы через Ins! "),
                 new Label("Tab - перейти к списку выбранных файлов "),
                 new Label("Del - отменить выбор сфокусированного.  "),
                 new Label("Enter - открыть директорию с этим файлом"),
@@ -38,30 +37,19 @@ namespace FileManager
                 new Label("F10 — закрыть файловый менеджер.        "),
             };
             
-            var header = new StackContainer
-            {
-                Orientation = Orientation.Horizontal,
-                Margin = 1,
-            };
-            var list = new StackContainer
-            {
-                MaxVisibleCount = 22
-            };
-            var selected = new StackContainer
-            {
-                MaxVisibleCount = 22
-            };
+            var manager = new FileManager(80, 24);
+            manager.ChangeDir(null);
 
             var root = new BaseContainer();
             root.Add(new RelativePosition(0, 0, 1)
             {
-                header
+                manager.Header
             });
             root.AddFocused(new RelativePosition(0, 1, 0)
             {
                 new Frame(Style.DarkGrayOnDefault)
                 {
-                    list
+                    manager.List
                 }
             });
             root.Add(new RelativePosition(40, 1, -1)
@@ -72,11 +60,9 @@ namespace FileManager
             {
                 new Frame(Style.DarkGrayOnDefault)
                 {
-                    selected
+                    manager.Selected
                 }
             });
-
-            new FileManager(list).ChangeDir(null);
 
             var loop = new MainLoop(root);
             loop.Start();
