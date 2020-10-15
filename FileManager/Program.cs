@@ -28,7 +28,7 @@ namespace FileManager
                 new Label("Del - отменить выбор сфокусированного.  "),
                 new Label("Enter - открыть директорию с этим файлом"),
                 new Label("             Команды:                   ") {CurrentStyle = Style.Active},
-                new Label("Enter — прочитать выбранные файлы в UTF8"),
+                new Label("F2 — прочитать выбранные файлы в UTF8.  "),
                 new Label("F3 — выбрать кодировку и прочитать файлы"),
                 new Label("F4 — выбрать кодировку и создать файл.  "),
                 new Label("Ins или Пробел — выбрать файл.          "),
@@ -43,68 +43,43 @@ namespace FileManager
                 Orientation = Orientation.Horizontal,
                 Margin = 1,
             };
-            header.Add(new Label("HEADER")
-            {
-                CurrentStyle = new Style(MyColor.Default, MyColor.Transparent)
-            });
-            header.Add(new Label("H")
-            {
-                CurrentStyle = new Style(MyColor.Default, MyColor.Transparent)
-            });
-            
             var list = new StackContainer
             {
-                MaxVisibleCount = 21
+                MaxVisibleCount = 22
             };
-            list.Add(new Label("LIST")
-            {
-                CurrentStyle = new Style(MyColor.Default, MyColor.Transparent)
-            });
-            list.Add(new Label("L")
-            {
-                CurrentStyle = new Style(MyColor.Default, MyColor.Transparent)
-            });
-
             var selected = new StackContainer
             {
-                MaxVisibleCount = 21
-            };
-            selected.Add(new Label("SELECTED")
-            {
-                CurrentStyle = new Style(MyColor.Default, MyColor.Transparent)
-            });
-            selected.Add(new Label("S")
-            {
-                CurrentStyle = new Style(MyColor.Default, MyColor.Transparent)
-            });
-
-            var root = new BaseContainer
-            {
-                new RelativePosition(0, 0, 1)
-                {
-                    header
-                },
-                new RelativePosition(0, 1, 0)
-                {
-                    new Frame(Style.DarkGrayOnDefault)
-                    {
-                        list
-                    }
-                },
-                new RelativePosition(40, 1, -1)
-                {
-                    help
-                },
-                new RelativePosition(40, 1, 1)
-                {
-                    new Frame(Style.DarkGrayOnDefault)
-                    {
-                        selected
-                    }
-                },
+                MaxVisibleCount = 22
             };
 
-            new MainLoop(root).Start();
+            var root = new BaseContainer();
+            root.Add(new RelativePosition(0, 0, 1)
+            {
+                header
+            });
+            root.AddFocused(new RelativePosition(0, 1, 0)
+            {
+                new Frame(Style.DarkGrayOnDefault)
+                {
+                    list
+                }
+            });
+            root.Add(new RelativePosition(40, 1, -1)
+            {
+                help
+            });
+            root.Add(new RelativePosition(40, 1, 1)
+            {
+                new Frame(Style.DarkGrayOnDefault)
+                {
+                    selected
+                }
+            });
+
+            new FileManager(list).ChangeDir(null);
+
+            var loop = new MainLoop(root);
+            loop.Start();
         }
     }
 }
