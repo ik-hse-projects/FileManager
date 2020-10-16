@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Enumeration;
+using Thuja;
 using Thuja.Widgets;
 
 namespace FileManager
@@ -36,7 +37,7 @@ namespace FileManager
             {
                 if (selectedList.Add(entry.FullName))
                 {
-                    var btn = new Button(entry.FullName);
+                    IKeyHandler btn = new Button(entry.FullName);
                     var delKey = new KeySelector(ConsoleKey.Delete);
                     btn.Add(delKey, () =>
                     {
@@ -56,21 +57,20 @@ namespace FileManager
             }
 
             List.Add(new Button("..")
-            {
-                {new KeySelector(ConsoleKey.Enter), () => ChangeDir(currentDirectory.Parent?.FullName)}
-            });
+                .AsIKeyHandler()
+                .Add(new KeySelector(ConsoleKey.Enter), () => ChangeDir(currentDirectory.Parent?.FullName)));
             foreach (var entry in currentDirectory.GetFileSystemInfos())
             {
                 var action = CreateAddAction(entry);
-                var button = new Button("", panelWidth)
-                {
-                    {new KeySelector(ConsoleKey.Insert), action},
-                    {new KeySelector(ConsoleKey.Spacebar), action}
-                };
+                var button = (Button) new Button("", panelWidth)
+                    .AsIKeyHandler()
+                    .Add(new KeySelector(ConsoleKey.Insert), action)
+                    .Add(new KeySelector(ConsoleKey.Spacebar), action);
 
                 if (entry.Attributes.HasFlag(FileAttributes.Directory))
                 {
-                    button.Add(new KeySelector(ConsoleKey.Enter), () => ChangeDir(entry.FullName));
+                    button.AsIKeyHandler()
+                        .Add(new KeySelector(ConsoleKey.Enter), () => ChangeDir(entry.FullName));
                     button.Text = $"{entry.Name}/";
                 }
                 else
@@ -113,9 +113,8 @@ namespace FileManager
                 foreach (var drive in Directory.GetLogicalDrives())
                 {
                     var button = new Button(drive, panelWidth)
-                    {
-                        {new KeySelector(ConsoleKey.Enter), () => ChangeDir(drive)}
-                    };
+                        .AsIKeyHandler()
+                        .Add(new KeySelector(ConsoleKey.Enter), () => ChangeDir(drive));
                     List.Add(button);
                 }
             }
