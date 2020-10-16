@@ -14,10 +14,11 @@ namespace FileManager
         /// </summary>
         private DirectoryInfo currentDirectory;
 
-        public StackContainer List { get; }
-        public StackContainer SelectedWidget { get; }
-        private HashSet<string> selectedList;
-        public Label Header { get; }
+        public IFocusable RootContainer { get; }
+        private readonly StackContainer List;
+        private readonly StackContainer SelectedWidget;
+        private readonly HashSet<string> selectedList;
+        private readonly Label Header;
 
         private readonly int panelWidth;
 
@@ -29,6 +30,16 @@ namespace FileManager
             Header = new Label("", maxWidth);
             SelectedWidget = new StackContainer(Orientation.Vertical, maxVisibleCount: maxHeight - 3);
             selectedList = new HashSet<string>();
+
+            RootContainer = new BaseContainer()
+                .Add(new RelativePosition(0, 0, 1)
+                    .Add(Header))
+                .AddFocused(new RelativePosition(0, 1, 0)
+                    .Add(new Frame(Style.DarkGrayOnDefault)
+                        .Add(List)))
+                .Add(new RelativePosition(40, 1, 1)
+                    .Add(new Frame(Style.DarkGrayOnDefault)
+                        .Add(SelectedWidget)));
         }
 
         private Action CreateAddAction(FileSystemInfo entry)
