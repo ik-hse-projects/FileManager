@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.IO.Enumeration;
 using Thuja.Widgets;
 
 namespace FileManager
@@ -12,7 +14,8 @@ namespace FileManager
         private DirectoryInfo currentDirectory;
 
         public StackContainer List { get; }
-        public StackContainer Selected { get; }
+        public StackContainer SelectedWidget { get; }
+        private HashSet<string> selectedList;
         public Label Header { get; }
 
         private readonly int panelWidth;
@@ -23,13 +26,26 @@ namespace FileManager
             panelWidth = (maxWidth / 2) - 2;
             List = new StackContainer(Orientation.Vertical, maxVisibleCount: maxHeight - 3);
             Header = new Label("", maxWidth);
-            Selected = new StackContainer(Orientation.Vertical, maxVisibleCount: maxHeight - 3);
+            SelectedWidget = new StackContainer(Orientation.Vertical, maxVisibleCount: maxHeight - 3);
+            selectedList = new HashSet<string>();
         }
 
         private Action CreateAddAction(FileSystemInfo entry)
         {
-            // TODO
-            return () => { };
+            return () =>
+            {
+                if (selectedList.Add(entry.FullName))
+                {
+                    var btn = new Button(entry.FullName);
+                    var delKey = new KeySelector(ConsoleKey.Delete);
+                    btn.Add(delKey, () =>
+                    {
+                        selectedList.Remove(entry.FullName);
+                        btn.Actions.Remove(delKey);
+                    });
+                    SelectedWidget.Add(btn);
+                }
+            };
         }
 
         private void UpdateCurrentDir()
@@ -52,18 +68,14 @@ namespace FileManager
                     {new KeySelector(ConsoleKey.Spacebar), action}
                 };
 
-                if (entry.Attributes.HasFlag(FileAttributes.Normal))
-                {
-                    button.Text = $"{entry.Name}";
-                }
-                else if (entry.Attributes.HasFlag(FileAttributes.Directory))
+                if (entry.Attributes.HasFlag(FileAttributes.Directory))
                 {
                     button.Add(new KeySelector(ConsoleKey.Enter), () => ChangeDir(entry.FullName));
                     button.Text = $"{entry.Name}/";
                 }
                 else
                 {
-                    button.Text = $"{entry.Name} (?)";
+                    button.Text = $"{entry.Name}";
                 }
 
                 List.Add(button);

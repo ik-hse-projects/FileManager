@@ -60,7 +60,7 @@ namespace FileManager
             {
                 new Frame(Style.DarkGrayOnDefault)
                 {
-                    manager.Selected
+                    manager.SelectedWidget
                 }
             });
 
