@@ -36,6 +36,7 @@ namespace FileManager
                 .Add(new Label("F10 — закрыть файловый менеджер.        "));
 
             var manager = new FileManager(80, 24);
+            manager.AttachActions();
             manager.ChangeDir(null);
 
             var root = new BaseContainer()

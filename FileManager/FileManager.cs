@@ -49,6 +49,11 @@ namespace FileManager
                 .Add(new KeySelector(ConsoleKey.Tab), () => rootContainer.Focused = wrappedList);
         }
 
+        public void AttachActions()
+        {
+            new Actions(rootContainer, selectedList).Attach();
+        }
+
         private Action CreateAddAction(FileSystemInfo entry)
         {
             return () =>
