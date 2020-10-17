@@ -48,19 +48,54 @@ namespace FileManager
                 // TODO: Ask encoding
                 encoding ??= Encoding.Default;
 
+                var errors = new List<(string filename, string message)>();
                 foreach (var path in selectedFiles)
                 {
-                    if (SafeIO.GetFullPath(path) is { State: ResultState.Ok, Value: var fullPath })
+                    using var maybeReader = SafeIO.GetFullPath(path)
+                        .AndThen(fullPath => SafeIO.StreamReader(fullPath, encoding));
+                    switch (maybeReader)
                     {
-                        // FIXME: Not safe
-                        using var reader = new StreamReader(path, encoding);
-                        var buffer = new char[255];
-                        reader.ReadBlock(buffer, 0, buffer.Length);
-                        Console.Write(buffer);
+                        case { State: ResultState.Ok, Value: var reader }:
+                        {
+                            foreach (var maybeBlock in reader.ReadBlocks())
+                            {
+                                switch (maybeBlock)
+                                {
+                                    case {State: ResultState.Ok, Value: var block}:
+                                        foreach (var c in block)
+                                        {
+                                            Console.Write(c);
+                                        }
+
+                                        break;
+                                    case { State: ResultState.Error, ErrorMessage: var message }:
+                                        errors.Add((path, message));
+                                        goto EndOfFile;
+                                }
+                            }
+
+                            break;
+                        }
+                        case { State: ResultState.Error, ErrorMessage: var message }:
+                        {
+                            errors.Add((path, message));
+                            break;
+                        }
+                    }
+                    EndOfFile: ;
+                }
+
+                Console.WriteLine();
+                if (errors.Count != 0)
+                {
+                    Console.WriteLine("Некоторые файлы не были прочитаны или были прочитаны не полностью:");
+                    foreach (var (filename, message) in errors)
+                    {
+                        Console.WriteLine($"{filename}: {message}");
                     }
                 }
 
-                Console.WriteLine("\n\nНажмите Enter, чтобы вернуться в менеджер.");
+                Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер.");
                 Console.ReadLine();
             };
         }

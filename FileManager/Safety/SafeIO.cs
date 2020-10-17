@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security;
+using System.Text;
 
 namespace FileManager.Safety
 {
@@ -51,6 +54,10 @@ namespace FileManager.Safety
             {
                 return Result<string>.Error("Путь слишком велик.");
             }
+            catch (Exception)
+            {
+                return Result<string>.Error("Неопознанная ошибка");
+            }
         }
 
         /// <summary>
@@ -75,6 +82,85 @@ namespace FileManager.Safety
             catch (PathTooLongException)
             {
                 return Result<DirectoryInfo>.Error("Путь слишком велик.");
+            }
+            catch (Exception)
+            {
+                return Result<DirectoryInfo>.Error("Неопознанная ошибка");
+            }
+        }
+
+        /// <summary>
+        /// Инициализирует новый экземпляр класса StreamReader для заданного имени файла, используя указанную кодировку символов.
+        /// </summary>
+        /// <param name="path">Полный путь к файлу для чтения.</param>
+        /// <param name="encoding">Кодировка символов, которую нужно использовать.</param>
+        /// <returns>Новый экземпляр класса StreamReader для заданного имени файла, используя указанную кодировку символов.</returns>
+        public static Result<StreamReader> StreamReader(string path, Encoding encoding)
+        {
+            try
+            {
+                return Result<StreamReader>.Ok(new StreamReader(path, encoding));
+            }
+            catch (ArgumentException)
+            {
+                return Result<StreamReader>.Error("Некорректный путь");
+            }
+            catch (NotSupportedException)
+            {
+                return Result<StreamReader>.Error("Некорректный путь");
+            }
+            catch (FileNotFoundException)
+            {
+                return Result<StreamReader>.Error("Файл не найден");
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return Result<StreamReader>.Error("Файл не найден");
+            }
+            catch (IOException)
+            {
+                return Result<StreamReader>.Error("Не удалось открыть файл");
+            }
+            catch (Exception)
+            {
+                return Result<StreamReader>.Error("Неопознанная ошибка");
+            }
+        }
+
+        public static IEnumerable<Result<IEnumerable<char>>> ReadBlocks(this StreamReader reader)
+        {
+            var buffer = new char[16 * 1024];
+            while (true)
+            {
+                int bytes;
+                try
+                {
+                    bytes = reader.ReadBlock(buffer, 0, buffer.Length);
+                }
+                catch (Exception)
+                {
+                    bytes = -1;
+                }
+
+                switch (bytes)
+                {
+                    case -1:
+                        yield return Result<IEnumerable<char>>.Error("Невозможно прочесть файл");
+                        yield break;
+                    case 0:
+                        yield break;
+                }
+
+                if (bytes == buffer.Length)
+                {
+                    yield return Result<IEnumerable<char>>.Ok(buffer);
+                }
+                else
+                {
+                    var smallerBuffer = buffer.Take(bytes);
+                    yield return Result<IEnumerable<char>>.Ok(smallerBuffer);
+                    yield break;
+                }
             }
         }
     }

@@ -8,7 +8,7 @@ namespace FileManager.Safety
         Error
     }
 
-    public class Result<T>
+    public class Result<T> : IDisposable
     {
         public readonly ResultState State;
         public readonly T Value;
@@ -47,6 +47,14 @@ namespace FileManager.Safety
                 ResultState.Ok => func(Value),
                 ResultState.Error => Result<U>.Error(ErrorMessage)
             };
+        }
+
+        public void Dispose()
+        {
+            if (State == ResultState.Ok && Value is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
         }
     }
 }
