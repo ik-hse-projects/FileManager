@@ -1,26 +1,26 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using FileManager.Safety;
 using Thuja;
+using Thuja.Widgets;
 
 namespace FileManager
 {
     public class Actions
     {
-        private ICollection<string> selectedFiles;
-        private BaseContainer root;
+        private FileManager manager;
 
-        public Actions(BaseContainer root, ICollection<string> selectedFiles)
+        public Actions(FileManager manager)
         {
-            this.root = root;
-            this.selectedFiles = selectedFiles;
+            this.manager = manager;
         }
 
         public void Attach()
         {
-            root.AsIKeyHandler()
+            manager.RootContainer.AsIKeyHandler()
                 // F2 | Ctrl+R: Прочитать файл в UTF8.
                 .Add(new[] {new KeySelector(ConsoleKey.F2), new KeySelector(ConsoleKey.R, ConsoleModifiers.Control)},
                     () => ReadFiles(Encoding.UTF8))
@@ -43,13 +43,13 @@ namespace FileManager
 
         private void ReadFiles(Encoding encoding)
         {
-            root.Loop.OnPaused = () =>
+            manager.RootContainer.Loop.OnPaused = () =>
             {
                 // TODO: Ask encoding
                 encoding ??= Encoding.Default;
 
                 var errors = new List<(string filename, string message)>();
-                foreach (var path in selectedFiles)
+                foreach (var path in manager.SelectedFiles)
                 {
                     using var maybeReader = SafeIO.GetFullPath(path)
                         .AndThen(fullPath => SafeIO.StreamReader(fullPath, encoding));
@@ -113,7 +113,7 @@ namespace FileManager
                     ("ASCII", Encoding.ASCII)
                 },
                 OnAnswered = ReadFiles
-            }.Show(root);
+            }.Show(manager.RootContainer);
         }
 
         private void CreateFile(Encoding encoding = null)
@@ -123,7 +123,44 @@ namespace FileManager
 
         private void CopyFiles()
         {
-            // TODO
+            new Dialog<bool>
+            {
+                Question = "Как вы относитель к перезаписи файлов?",
+                Answers = new[]
+                {
+                    ("Не перезаписывать", false),
+                    ("Перезаписывать", true),
+                },
+                OnAnswered = CopyFiles
+            }.Show(manager.RootContainer);
+        }
+
+        private void CopyFiles(bool overwrite)
+        {
+            var target = SafeIO.DirectoryInfo(manager.CurrentDirectory?.FullName);
+            if (target.State == ResultState.Error)
+            {
+                new Dialog<object>
+                {
+                    Question = $"Невозможно скопировать файлы в текущую директорию: {target.ErrorMessage}",
+                }.Show(manager.RootContainer);
+                return;
+            }
+            var errors = new List<(string path, string message)>();
+            foreach (var selectedFile in manager.SelectedFiles)
+            {
+                var newLocation = Path.Combine(target.Value.FullName, Path.GetFileName(selectedFile));
+                if (SafeIO.CopyFile(selectedFile, newLocation, overwrite) is {State: ResultState.Error, ErrorMessage: var message})
+                {
+                    errors.Add((selectedFile, message));
+                }
+            }
+
+            new Dialog<object>
+            {
+                Question = $"Не удалось скопировать {errors.Count} файлов",
+                Answers = errors.Select(e => ($"{e.path}: {e.message}", new object())).ToArray()
+            }.Show(manager.RootContainer);
         }
 
         private void MoveFiles()

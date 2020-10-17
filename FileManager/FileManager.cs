@@ -12,9 +12,10 @@ namespace FileManager
         /// <summary>
         /// Информация о текущей директории
         /// </summary>
-        private DirectoryInfo currentDirectory;
+        public DirectoryInfo? CurrentDirectory { get; private set; }
+        public IReadOnlyCollection<string> SelectedFiles => selectedSet;
 
-        public IFocusable RootContainer => rootContainer;
+        public BaseContainer RootContainer => rootContainer;
 
         private readonly StackContainer list;
         private readonly StackContainer selectedWidget;
@@ -26,7 +27,7 @@ namespace FileManager
 
         public FileManager(int maxWidth, int maxHeight)
         {
-            currentDirectory = null;
+            CurrentDirectory = null;
             panelWidth = (maxWidth / 2) - 2;
             list = new StackContainer(Orientation.Vertical, maxVisibleCount: maxHeight - 3);
             header = new Label("", maxWidth);
@@ -56,7 +57,7 @@ namespace FileManager
 
         public void AttachActions()
         {
-            new Actions(rootContainer, selectedSet).Attach();
+            new Actions(this).Attach();
         }
 
         private Action CreateAddAction(FileSystemInfo entry)
@@ -83,15 +84,15 @@ namespace FileManager
 
         private void UpdateCurrentDir()
         {
-            if (currentDirectory == null)
+            if (CurrentDirectory == null)
             {
                 return;
             }
 
             list.Add(new Button("..")
                 .AsIKeyHandler()
-                .Add(new KeySelector(ConsoleKey.Enter), () => ChangeDir(currentDirectory.Parent?.FullName)));
-            foreach (var entry in currentDirectory.GetFileSystemInfos())
+                .Add(new KeySelector(ConsoleKey.Enter), () => ChangeDir(CurrentDirectory.Parent?.FullName)));
+            foreach (var entry in CurrentDirectory.GetFileSystemInfos())
             {
                 var action = CreateAddAction(entry);
                 var button = (Button) new Button("", panelWidth)
@@ -118,7 +119,7 @@ namespace FileManager
         {
             if (to == null)
             {
-                currentDirectory = null;
+                CurrentDirectory = null;
             }
             else
             {
@@ -136,7 +137,7 @@ namespace FileManager
                     // Exists
                     case { State: ResultState.Ok, Value: var directoryInfo }:
                     {
-                        currentDirectory = directoryInfo;
+                        CurrentDirectory = directoryInfo;
                         break;
                     }
                     case { State: ResultState.Error, ErrorMessage: var message}:
@@ -145,14 +146,14 @@ namespace FileManager
                 }
             }
 
-            header.Text = currentDirectory?.FullName ?? "";
+            header.Text = CurrentDirectory?.FullName ?? "";
             UpdateList();
         }
 
         private void UpdateList()
         {
             list.Clear();
-            if (currentDirectory != null)
+            if (CurrentDirectory != null)
             {
                 UpdateCurrentDir();
             }

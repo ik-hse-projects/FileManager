@@ -65,7 +65,7 @@ namespace FileManager.Safety
         /// </summary>
         /// <param name="path">Строка, содержащая путь, для которого создается класс DirectoryInfo.</param>
         /// <returns>Новый экземпляра класса DirectoryInfo для заданного пути.</returns>
-        public static Result<DirectoryInfo> DirectoryInfo(string path)
+        public static Result<DirectoryInfo> DirectoryInfo(string? path)
         {
             try
             {
@@ -161,6 +161,53 @@ namespace FileManager.Safety
                     yield return Result<IEnumerable<char>>.Ok(smallerBuffer);
                     yield break;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Копирует существующий файл в новый файл. Перезаписывает файлы с тем же именем в зависимости от overwrite.
+        /// </summary>
+        /// <param name="from">Копируемый файл.</param>
+        /// <param name="to">Имя целевого файла.</param>
+        /// <param name="overwrite">true, если конечный файл можно перезаписывать; в противном случае — false.</param>
+        public static Result<object> CopyFile(string from, string to, bool overwrite)
+        {
+            try
+            {
+                File.Copy(from, to, overwrite);
+                return Result<object>.Ok(new object());
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Result<object>.Error("Отсутствует необходимое разрешение.");
+            }
+            catch (ArgumentException)
+            {
+                return Result<object>.Error("Некорректный путь.");
+            }
+            catch (PathTooLongException)
+            {
+                return Result<object>.Error("Путь слишком велик.");
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return Result<object>.Error("Путь не существует.");
+            }
+            catch (FileNotFoundException)
+            {
+                return Result<object>.Error($"Не удалось найти путь `{from}`.");
+            }
+            catch (IOException)
+            {
+                return Result<object>.Error("Произошла ошибка вводы-вывода или невозможно перезаписать.");
+            }
+            catch (NotSupportedException)
+            {
+                return Result<object>.Error("Путь имеет недопустимый формат.");
+            }
+            catch (Exception)
+            {
+                return Result<object>.Error("Неопознанная ошибка");
             }
         }
     }
