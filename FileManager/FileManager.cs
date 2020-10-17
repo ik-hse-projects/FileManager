@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Enumeration;
 using Thuja;
 using Thuja.Widgets;
 
@@ -14,13 +13,15 @@ namespace FileManager
         /// </summary>
         private DirectoryInfo currentDirectory;
 
-        public IFocusable RootContainer { get; }
+        public IFocusable RootContainer => rootContainer;
+
         private readonly StackContainer List;
         private readonly StackContainer SelectedWidget;
         private readonly HashSet<string> selectedList;
         private readonly Label Header;
 
         private readonly int panelWidth;
+        private readonly BaseContainer rootContainer;
 
         public FileManager(int maxWidth, int maxHeight)
         {
@@ -31,15 +32,19 @@ namespace FileManager
             SelectedWidget = new StackContainer(Orientation.Vertical, maxVisibleCount: maxHeight - 3);
             selectedList = new HashSet<string>();
 
-            RootContainer = new BaseContainer()
+            var wrappedList = new RelativePosition(0, 1, 0)
+                .Add(new Frame(Style.DarkGrayOnDefault)
+                    .Add(List));
+            var wrappedSelected = new RelativePosition(40, 1, 1)
+                .Add(new Frame(Style.DarkGrayOnDefault)
+                    .Add(SelectedWidget));
+            rootContainer = new BaseContainer()
                 .Add(new RelativePosition(0, 0, 1)
                     .Add(Header))
-                .AddFocused(new RelativePosition(0, 1, 0)
-                    .Add(new Frame(Style.DarkGrayOnDefault)
-                        .Add(List)))
-                .Add(new RelativePosition(40, 1, 1)
-                    .Add(new Frame(Style.DarkGrayOnDefault)
-                        .Add(SelectedWidget)));
+                .AddFocused(wrappedList)
+                .Add(wrappedSelected);
+            List.AsIKeyHandler().Add(new KeySelector(ConsoleKey.Tab), () => rootContainer.Focused = wrappedSelected);
+            SelectedWidget.AsIKeyHandler().Add(new KeySelector(ConsoleKey.Tab), () => rootContainer.Focused = wrappedList);
         }
 
         private Action CreateAddAction(FileSystemInfo entry)
@@ -53,7 +58,7 @@ namespace FileManager
                     btn.Add(delKey, () =>
                     {
                         selectedList.Remove(entry.FullName);
-                        btn.Actions.Remove(delKey);
+                        SelectedWidget.Remove(btn);
                     });
                     SelectedWidget.Add(btn);
                 }
