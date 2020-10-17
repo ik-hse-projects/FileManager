@@ -172,6 +172,10 @@ namespace FileManager.Safety
         /// <param name="overwrite">true, если конечный файл можно перезаписывать; в противном случае — false.</param>
         public static Result<object> CopyFile(string from, string to, bool overwrite)
         {
+            if (to == from)
+            {
+                return Result<object>.Error("Нельзя копировать файл из одного места в то же самое.");
+            }
             try
             {
                 File.Copy(from, to, overwrite);

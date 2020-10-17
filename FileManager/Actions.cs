@@ -45,9 +45,6 @@ namespace FileManager
         {
             manager.RootContainer.Loop.OnPaused = () =>
             {
-                // TODO: Ask encoding
-                encoding ??= Encoding.Default;
-
                 var errors = new List<(string filename, string message)>();
                 foreach (var path in manager.SelectedFiles)
                 {
@@ -82,6 +79,7 @@ namespace FileManager
                             break;
                         }
                     }
+
                     EndOfFile: ;
                 }
 
@@ -101,13 +99,13 @@ namespace FileManager
                 Console.ReadLine();
             };
         }
-        
+
         private void ReadFiles()
         {
             new Dialog<Encoding>
             {
                 Question = "Выберите кодировку",
-                Answers = new []
+                Answers = new[]
                 {
                     ("UTF8", Encoding.UTF8),
                     ("ASCII", Encoding.ASCII)
@@ -142,25 +140,36 @@ namespace FileManager
             {
                 new Dialog<object>
                 {
-                    Question = $"Невозможно скопировать файлы в текущую директорию: {target.ErrorMessage}",
+                    Question = $"Невозможно копировать файлы в текущую директорию: {target.ErrorMessage}",
                 }.Show(manager.RootContainer);
                 return;
             }
-            var errors = new List<(string path, string message)>();
-            foreach (var selectedFile in manager.SelectedFiles)
-            {
-                var newLocation = Path.Combine(target.Value.FullName, Path.GetFileName(selectedFile));
-                if (SafeIO.CopyFile(selectedFile, newLocation, overwrite) is {State: ResultState.Error, ErrorMessage: var message})
-                {
-                    errors.Add((selectedFile, message));
-                }
-            }
 
-            new Dialog<object>
+            manager.RootContainer.Loop.OnPaused = () =>
             {
-                Question = $"Не удалось скопировать {errors.Count} файлов",
-                Answers = errors.Select(e => ($"{e.path}: {e.message}", new object())).ToArray()
-            }.Show(manager.RootContainer);
+
+                Console.WriteLine("Копируем...");
+                foreach (var selectedFile in manager.SelectedFiles)
+                {
+                    var newLocation = Path.Combine(target.Value.FullName, Path.GetFileName(selectedFile));
+                    if (SafeIO.CopyFile(selectedFile, newLocation, overwrite) is {State: ResultState.Error, ErrorMessage
+                        :
+                        var message})
+                    {
+                        Console.BackgroundColor = ConsoleColor.White;
+                        Console.ForegroundColor = ConsoleColor.Black;
+                        Console.WriteLine($"{selectedFile}: {message}");
+                        Console.ResetColor();
+                    }
+                    else
+                    {
+                        Console.WriteLine($"{selectedFile}: OK");
+                    }
+                }
+
+                Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер");
+                Console.ReadLine();
+            };
         }
 
         private void MoveFiles()
