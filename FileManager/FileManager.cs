@@ -44,7 +44,12 @@ namespace FileManager
                     .Add(header))
                 .AddFocused(wrappedList)
                 .Add(wrappedSelected);
-            list.AsIKeyHandler().Add(new KeySelector(ConsoleKey.Tab), () => rootContainer.Focused = wrappedSelected);
+            rootContainer.AsIKeyHandler()
+                .Add(new[] {new KeySelector(ConsoleKey.F10), new KeySelector(ConsoleKey.Escape)},
+                    () => rootContainer.Loop.OnStop = () => Console.WriteLine("До новых встреч!"));
+            list.AsIKeyHandler()
+                .Add(new[] {new KeySelector('/'), new KeySelector('\\')}, () => ChangeDir(null))
+                .Add(new KeySelector(ConsoleKey.Tab), () => rootContainer.Focused = wrappedSelected);
             selectedWidget.AsIKeyHandler()
                 .Add(new KeySelector(ConsoleKey.Tab), () => rootContainer.Focused = wrappedList);
         }

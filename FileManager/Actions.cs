@@ -109,8 +109,8 @@ namespace FileManager
                 Question = "Выберите кодировку",
                 Answers = new []
                 {
-                    Encoding.UTF8,
-                    Encoding.ASCII,
+                    ("UTF8", Encoding.UTF8),
+                    ("ASCII", Encoding.ASCII)
                 },
                 OnAnswered = ReadFiles
             }.Show(root);
