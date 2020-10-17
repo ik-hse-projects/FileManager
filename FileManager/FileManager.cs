@@ -18,7 +18,7 @@ namespace FileManager
 
         private readonly StackContainer list;
         private readonly StackContainer selectedWidget;
-        private readonly HashSet<string> selectedList;
+        private readonly OrderedSet<string> selectedSet;
         private readonly Label header;
 
         private readonly int panelWidth;
@@ -31,7 +31,7 @@ namespace FileManager
             list = new StackContainer(Orientation.Vertical, maxVisibleCount: maxHeight - 3);
             header = new Label("", maxWidth);
             selectedWidget = new StackContainer(Orientation.Vertical, maxVisibleCount: maxHeight - 3);
-            selectedList = new HashSet<string>();
+            selectedSet = new OrderedSet<string>();
 
             var wrappedList = new RelativePosition(0, 1, 0)
                 .Add(new Frame(Style.DarkGrayOnDefault)
@@ -51,14 +51,14 @@ namespace FileManager
 
         public void AttachActions()
         {
-            new Actions(rootContainer, selectedList).Attach();
+            new Actions(rootContainer, selectedSet).Attach();
         }
 
         private Action CreateAddAction(FileSystemInfo entry)
         {
             return () =>
             {
-                if (selectedList.Add(entry.FullName))
+                if (!selectedSet.Contains(entry.FullName))
                 {
                     IKeyHandler btn = new Button(entry.FullName);
                     btn.Add(new[]
@@ -67,9 +67,10 @@ namespace FileManager
                         new KeySelector(ConsoleKey.Backspace),
                     }, () =>
                     {
-                        selectedList.Remove(entry.FullName);
+                        selectedSet.Remove(entry.FullName);
                         selectedWidget.Remove(btn);
                     });
+                    selectedSet.Add(entry.FullName);
                     selectedWidget.Add(btn);
                 }
             };

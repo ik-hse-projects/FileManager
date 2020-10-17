@@ -1,16 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
+using FileManager.Safety;
 using Thuja;
 
 namespace FileManager
 {
     public class Actions
     {
-        private HashSet<string> selectedFiles;
+        private ICollection<string> selectedFiles;
         private BaseContainer root;
 
-        public Actions(BaseContainer root, HashSet<string> selectedFiles)
+        public Actions(BaseContainer root, ICollection<string> selectedFiles)
         {
             this.root = root;
             this.selectedFiles = selectedFiles;
@@ -41,7 +43,26 @@ namespace FileManager
 
         private void ReadFiles(Encoding encoding = null)
         {
-            // TODO
+            root.Loop.OnPaused = () =>
+            {
+                // TODO: Ask encoding
+                encoding ??= Encoding.Default;
+
+                foreach (var path in selectedFiles)
+                {
+                    if (SafeIO.GetFullPath(path) is { State: ResultState.Ok, Value: var fullPath })
+                    {
+                        // FIXME: Not safe
+                        using var reader = new StreamReader(path, encoding);
+                        var buffer = new char[255];
+                        reader.ReadBlock(buffer, 0, buffer.Length);
+                        Console.Write(buffer);
+                    }
+                }
+
+                Console.WriteLine("\n\nНажмите Enter, чтобы вернуться в менеджер.");
+                Console.ReadLine();
+            };
         }
 
         private void CreateFile(Encoding encoding = null)
