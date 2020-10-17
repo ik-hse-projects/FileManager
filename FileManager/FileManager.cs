@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using FileManager.Safety;
 using Thuja;
 using Thuja.Widgets;
 
@@ -15,10 +16,10 @@ namespace FileManager
 
         public IFocusable RootContainer => rootContainer;
 
-        private readonly StackContainer List;
-        private readonly StackContainer SelectedWidget;
+        private readonly StackContainer list;
+        private readonly StackContainer selectedWidget;
         private readonly HashSet<string> selectedList;
-        private readonly Label Header;
+        private readonly Label header;
 
         private readonly int panelWidth;
         private readonly BaseContainer rootContainer;
@@ -27,24 +28,25 @@ namespace FileManager
         {
             currentDirectory = null;
             panelWidth = (maxWidth / 2) - 2;
-            List = new StackContainer(Orientation.Vertical, maxVisibleCount: maxHeight - 3);
-            Header = new Label("", maxWidth);
-            SelectedWidget = new StackContainer(Orientation.Vertical, maxVisibleCount: maxHeight - 3);
+            list = new StackContainer(Orientation.Vertical, maxVisibleCount: maxHeight - 3);
+            header = new Label("", maxWidth);
+            selectedWidget = new StackContainer(Orientation.Vertical, maxVisibleCount: maxHeight - 3);
             selectedList = new HashSet<string>();
 
             var wrappedList = new RelativePosition(0, 1, 0)
                 .Add(new Frame(Style.DarkGrayOnDefault)
-                    .Add(List));
+                    .Add(list));
             var wrappedSelected = new RelativePosition(40, 1, 1)
                 .Add(new Frame(Style.DarkGrayOnDefault)
-                    .Add(SelectedWidget));
+                    .Add(selectedWidget));
             rootContainer = new BaseContainer()
                 .Add(new RelativePosition(0, 0, 1)
-                    .Add(Header))
+                    .Add(header))
                 .AddFocused(wrappedList)
                 .Add(wrappedSelected);
-            List.AsIKeyHandler().Add(new KeySelector(ConsoleKey.Tab), () => rootContainer.Focused = wrappedSelected);
-            SelectedWidget.AsIKeyHandler().Add(new KeySelector(ConsoleKey.Tab), () => rootContainer.Focused = wrappedList);
+            list.AsIKeyHandler().Add(new KeySelector(ConsoleKey.Tab), () => rootContainer.Focused = wrappedSelected);
+            selectedWidget.AsIKeyHandler()
+                .Add(new KeySelector(ConsoleKey.Tab), () => rootContainer.Focused = wrappedList);
         }
 
         private Action CreateAddAction(FileSystemInfo entry)
@@ -54,13 +56,16 @@ namespace FileManager
                 if (selectedList.Add(entry.FullName))
                 {
                     IKeyHandler btn = new Button(entry.FullName);
-                    var delKey = new KeySelector(ConsoleKey.Delete);
-                    btn.Add(delKey, () =>
+                    btn.Add(new[]
+                    {
+                        new KeySelector(ConsoleKey.Delete),
+                        new KeySelector(ConsoleKey.Backspace),
+                    }, () =>
                     {
                         selectedList.Remove(entry.FullName);
-                        SelectedWidget.Remove(btn);
+                        selectedWidget.Remove(btn);
                     });
-                    SelectedWidget.Add(btn);
+                    selectedWidget.Add(btn);
                 }
             };
         }
@@ -72,7 +77,7 @@ namespace FileManager
                 return;
             }
 
-            List.Add(new Button("..")
+            list.Add(new Button("..")
                 .AsIKeyHandler()
                 .Add(new KeySelector(ConsoleKey.Enter), () => ChangeDir(currentDirectory.Parent?.FullName)));
             foreach (var entry in currentDirectory.GetFileSystemInfos())
@@ -94,7 +99,7 @@ namespace FileManager
                     button.Text = $"{entry.Name}";
                 }
 
-                List.Add(button);
+                list.Add(button);
             }
         }
 
@@ -106,20 +111,36 @@ namespace FileManager
             }
             else
             {
-                var fullPath = Path.GetFullPath(to);
-                if (Directory.Exists(fullPath))
+                var isExists = SafeIO
+                    .GetFullPath(to)
+                    .AndThen(fullPath => SafeIO
+                        .Exists(fullPath)
+                        .AndThen(isExists => isExists
+                            ? Result<string>.Ok(fullPath)
+                            : Result<string>.Error("Невозможно перейти в указанную директорию"))
+                    )
+                    .AndThen(SafeIO.DirectoryInfo);
+                switch (isExists)
                 {
-                    currentDirectory = new DirectoryInfo(fullPath);
+                    // Exists
+                    case { State: ResultState.Ok, Value: var directoryInfo }:
+                    {
+                        currentDirectory = directoryInfo;
+                        break;
+                    }
+                    case { State: ResultState.Error, ErrorMessage: var message}:
+                        // TODO: Show error message
+                        break;
                 }
             }
 
-            Header.Text = currentDirectory?.FullName ?? "";
+            header.Text = currentDirectory?.FullName ?? "";
             UpdateList();
         }
 
         private void UpdateList()
         {
-            List.Clear();
+            list.Clear();
             if (currentDirectory != null)
             {
                 UpdateCurrentDir();
@@ -131,7 +152,7 @@ namespace FileManager
                     var button = new Button(drive, panelWidth)
                         .AsIKeyHandler()
                         .Add(new KeySelector(ConsoleKey.Enter), () => ChangeDir(drive));
-                    List.Add(button);
+                    list.Add(button);
                 }
             }
         }
