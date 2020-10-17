@@ -23,7 +23,7 @@ namespace FileManager
             root.AsIKeyHandler()
                 // F2 | Ctrl+R: Прочитать файл в UTF8.
                 .Add(new[] {new KeySelector(ConsoleKey.F2), new KeySelector(ConsoleKey.R, ConsoleModifiers.Control)},
-                    () => ReadFiles())
+                    () => ReadFiles(Encoding.UTF8))
                 // F3 | Ctrl+O: Прочитать файл в выбранной кодировке.
                 .Add(new[] {new KeySelector(ConsoleKey.F3), new KeySelector(ConsoleKey.O, ConsoleModifiers.Control)},
                     () => ReadFiles())
@@ -41,7 +41,7 @@ namespace FileManager
                     DeleteFiles);
         }
 
-        private void ReadFiles(Encoding encoding = null)
+        private void ReadFiles(Encoding encoding)
         {
             root.Loop.OnPaused = () =>
             {
@@ -85,6 +85,8 @@ namespace FileManager
                     EndOfFile: ;
                 }
 
+                Console.ForegroundColor = ConsoleColor.Black;
+                Console.BackgroundColor = ConsoleColor.White;
                 Console.WriteLine();
                 if (errors.Count != 0)
                 {
@@ -98,6 +100,20 @@ namespace FileManager
                 Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер.");
                 Console.ReadLine();
             };
+        }
+        
+        private void ReadFiles()
+        {
+            new Dialog<Encoding>
+            {
+                Question = "Выберите кодировку",
+                Answers = new []
+                {
+                    Encoding.UTF8,
+                    Encoding.ASCII,
+                },
+                OnAnswered = ReadFiles
+            }.Show(root);
         }
 
         private void CreateFile(Encoding encoding = null)
