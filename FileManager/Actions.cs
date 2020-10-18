@@ -160,7 +160,7 @@ namespace FileManager
                         Console.WriteLine($"{selectedFile}: OK");
                     }
                 }
-                
+
                 Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер");
                 Console.ReadLine();
                 manager.Refresh();
@@ -177,7 +177,7 @@ namespace FileManager
             new Dialog<object>
             {
                 Question = $"Точно удалить {manager.SelectedFiles.Count} объектов?",
-                Answers = new []{("Да", new object())},
+                Answers = new[] {("Да", new object())},
                 OnAnswered = _ => manager.RootContainer.Loop.OnPaused = () =>
                 {
                     Console.WriteLine("Удаляем...");
@@ -198,7 +198,7 @@ namespace FileManager
                             Console.WriteLine($"{file}: OK");
                         }
                     }
-                    
+
                     Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер");
                     Console.ReadLine();
                     manager.Refresh();
@@ -206,9 +206,85 @@ namespace FileManager
             }.Show(manager.RootContainer);
         }
 
-        private void CreateFile(Encoding encoding = null)
+        private void ConcatFile(string path, Encoding encoding)
         {
             // TODO
+        }
+
+        private void NewFile(string path, Encoding encoding)
+        {
+            // TODO
+        }
+
+        private void CreateFile(Encoding? encoding = null)
+        {
+            void AskMode(Action<int> then)
+            {
+                new Dialog<int>
+                {
+                    Question = "Как вы хотите создать файл?",
+                    Answers = new[]
+                    {
+                        ("Конкатенировать существующие", 1),
+                        ("Ввести вручную", 2),
+                    },
+                    OnAnswered = then
+                }.Show(manager.RootContainer);
+            }
+
+            void AskEncoding(Action<Encoding> then)
+            {
+                if (encoding != null)
+                {
+                    then(encoding);
+                }
+                else
+                {
+                    new Dialog<Encoding>
+                    {
+                        Question = "Как вы хотите создать файл?",
+                        Answers = new[]
+                        {
+                            ("UTF8", Encoding.UTF8),
+                            ("ASCII", Encoding.ASCII),
+                        },
+                        OnAnswered = then
+                    }.Show(manager.RootContainer);
+                }
+            }
+
+            void AskFilename(Action<string> then)
+            {
+                var popup = new Popup()
+                    .Add(new MultilineLabel("Введите имя файла:"));
+
+                var input = new InputField
+                {
+                    Placeholder = new Placeholder(Style.Decoration, "Введите имя файла"),
+                };
+                input.AsIKeyHandler()
+                    .Add(KeySelector.SelectItem, () =>
+                    {
+                        popup.Close();
+                        then(input.Text.ToString());
+                    });
+                popup.Add(input)
+                    .AndFocus()
+                    .Show(manager.RootContainer);
+            }
+
+            AskMode(mode => AskEncoding(encoding => AskFilename(filename =>
+            {
+                switch (mode)
+                {
+                    case 1:
+                        ConcatFile(filename, encoding);
+                        break;
+                    case 2:
+                        NewFile(filename, encoding);
+                        break;
+                }
+            })));
         }
     }
 }
