@@ -168,5 +168,10 @@ namespace FileManager
                 }
             }
         }
+
+        public void Refresh()
+        {
+            UpdateList();
+        }
     }
 }

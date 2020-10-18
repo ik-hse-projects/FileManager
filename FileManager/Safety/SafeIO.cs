@@ -203,11 +203,59 @@ namespace FileManager.Safety
             }
             catch (IOException)
             {
-                return Result<object>.Error("Произошла ошибка вводы-вывода или невозможно перезаписать.");
+                return Result<object>.Error("Произошла ошибка ввода-вывода или невозможно перезаписать.");
             }
             catch (NotSupportedException)
             {
                 return Result<object>.Error("Путь имеет недопустимый формат.");
+            }
+            catch (Exception)
+            {
+                return Result<object>.Error("Неопознанная ошибка");
+            }
+        }
+
+        public static Result<object> DeleteRecursively(string path)
+        {
+            try
+            {
+                if (Directory.Exists(path))
+                {
+                    Directory.Delete(path, true);
+                    return Result<object>.Ok(new object());
+                }
+
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                    return Result<object>.Ok(new object());
+                }
+
+                return Result<object>.Error("Файл не найден или он не поддерживается.");
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Result<object>.Error("Отсутствует необходимое разрешение.");
+            }
+            catch (ArgumentException)
+            {
+                return Result<object>.Error("Некорректный путь.");
+            }
+            catch (PathTooLongException)
+            {
+                return Result<object>.Error("Путь слишком велик.");
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return Result<object>.Error("Путь не существует.");
+            }
+            catch (IOException)
+            {
+                return Result<object>.Error("Невозможно удалить.");
+            }
+            catch (NotSupportedException)
+            {
+                return Result<object>.Error("Неподдерживаемый файл.");
             }
             catch (Exception)
             {

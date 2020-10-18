@@ -26,7 +26,7 @@ namespace FileManager
                     () => ReadFiles(Encoding.UTF8))
                 // F3 | Ctrl+O: Прочитать файл в выбранной кодировке.
                 .Add(new[] {new KeySelector(ConsoleKey.F3), new KeySelector(ConsoleKey.O, ConsoleModifiers.Control)},
-                    () => ReadFiles())
+                    ReadFiles)
                 // F4 | Ctrl+N: Создать UTF-8.
                 .Add(new[] {new KeySelector(ConsoleKey.F4), new KeySelector(ConsoleKey.N, ConsoleModifiers.Control)},
                     () => CreateFile(Encoding.UTF8))
@@ -114,11 +114,6 @@ namespace FileManager
             }.Show(manager.RootContainer);
         }
 
-        private void CreateFile(Encoding encoding = null)
-        {
-            // TODO
-        }
-
         private void CopyFiles()
         {
             new Dialog<bool>
@@ -147,7 +142,6 @@ namespace FileManager
 
             manager.RootContainer.Loop.OnPaused = () =>
             {
-
                 Console.WriteLine("Копируем...");
                 foreach (var selectedFile in manager.SelectedFiles)
                 {
@@ -166,9 +160,10 @@ namespace FileManager
                         Console.WriteLine($"{selectedFile}: OK");
                     }
                 }
-
+                
                 Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер");
                 Console.ReadLine();
+                manager.Refresh();
             };
         }
 
@@ -178,6 +173,40 @@ namespace FileManager
         }
 
         private void DeleteFiles()
+        {
+            new Dialog<object>
+            {
+                Question = $"Точно удалить {manager.SelectedFiles.Count} объектов?",
+                Answers = new []{("Да", new object())},
+                OnAnswered = _ => manager.RootContainer.Loop.OnPaused = () =>
+                {
+                    Console.WriteLine("Удаляем...");
+
+                    foreach (var file in manager.SelectedFiles)
+                    {
+                        if (SafeIO.DeleteRecursively(file) is {State: ResultState.Error, ErrorMessage
+                            :
+                            var message})
+                        {
+                            Console.BackgroundColor = ConsoleColor.White;
+                            Console.ForegroundColor = ConsoleColor.Black;
+                            Console.WriteLine($"{file}: {message}");
+                            Console.ResetColor();
+                        }
+                        else
+                        {
+                            Console.WriteLine($"{file}: OK");
+                        }
+                    }
+                    
+                    Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер");
+                    Console.ReadLine();
+                    manager.Refresh();
+                }
+            }.Show(manager.RootContainer);
+        }
+
+        private void CreateFile(Encoding encoding = null)
         {
             // TODO
         }
