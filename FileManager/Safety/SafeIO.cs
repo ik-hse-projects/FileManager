@@ -263,6 +263,50 @@ namespace FileManager.Safety
             }
         }
 
+        public static Result<object> Move(string from, string to)
+        {
+            try
+            {
+                if (Directory.Exists(from))
+                {
+                    Directory.Move(from, to);
+                    return Result<object>.Ok(new object());
+                }
+
+                if (File.Exists(from))
+                {
+                    File.Move(from, to);
+                    return Result<object>.Ok(new object());
+                }
+
+                return Result<object>.Error("Файл не найден или он не поддерживается.");
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Result<object>.Error("Отсутствует необходимое разрешение.");
+            }
+            catch (ArgumentException)
+            {
+                return Result<object>.Error("Некорректный путь.");
+            }
+            catch (PathTooLongException)
+            {
+                return Result<object>.Error("Путь слишком велик.");
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return Result<object>.Error("Путь не существует.");
+            }
+            catch (IOException)
+            {
+                return Result<object>.Error("Невозможно переместить.");
+            }
+            catch (Exception)
+            {
+                return Result<object>.Error("Неопознанная ошибка");
+            }
+        }
+
         public static Result<StreamWriter> CreateFile(string path, Encoding encoding)
         {
             try

@@ -169,40 +169,79 @@ namespace FileManager
 
         private void MoveFiles()
         {
-            // TODO
+            void Delete()
+            {
+                Console.WriteLine("Перемещаем...");
+
+                foreach (var file in manager.SelectedFiles)
+                {
+                    if (SafeIO.Move(file, manager.CurrentDirectory?.FullName) is {State: ResultState.Error, ErrorMessage : var message})
+                    {
+                        Console.BackgroundColor = ConsoleColor.White;
+                        Console.ForegroundColor = ConsoleColor.Black;
+                        Console.WriteLine($"{file}: {message}");
+                        Console.ResetColor();
+                    }
+                    else
+                    {
+                        Console.WriteLine($"{file}: OK");
+                    }
+                }
+
+                Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер");
+                Console.ReadLine();
+                manager.Refresh();
+            }
+            
+            var target = SafeIO.DirectoryInfo(manager.CurrentDirectory?.FullName);
+            if (target.State == ResultState.Error)
+            {
+                new Dialog<object>
+                {
+                    Question = $"Невозможно копировать файлы в текущую директорию: {target.ErrorMessage}",
+                }.Show(manager.RootContainer);
+                return;
+            }
+
+            new Dialog<object>
+            {
+                Question = $"Точно переместить {manager.SelectedFiles.Count} объектов?",
+                Answers = new[] {("Да", new object())},
+                OnAnswered = _ => manager.RootContainer.Loop.OnPaused = Delete
+            }.Show(manager.RootContainer);
         }
 
         private void DeleteFiles()
         {
+            void Delete()
+            {
+                Console.WriteLine("Удаляем...");
+
+                foreach (var file in manager.SelectedFiles)
+                {
+                    if (SafeIO.DeleteRecursively(file) is {State: ResultState.Error, ErrorMessage : var message})
+                    {
+                        Console.BackgroundColor = ConsoleColor.White;
+                        Console.ForegroundColor = ConsoleColor.Black;
+                        Console.WriteLine($"{file}: {message}");
+                        Console.ResetColor();
+                    }
+                    else
+                    {
+                        Console.WriteLine($"{file}: OK");
+                    }
+                }
+
+                Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер");
+                Console.ReadLine();
+                manager.Refresh();
+            }
+
             new Dialog<object>
             {
                 Question = $"Точно удалить {manager.SelectedFiles.Count} объектов?",
                 Answers = new[] {("Да", new object())},
-                OnAnswered = _ => manager.RootContainer.Loop.OnPaused = () =>
-                {
-                    Console.WriteLine("Удаляем...");
-
-                    foreach (var file in manager.SelectedFiles)
-                    {
-                        if (SafeIO.DeleteRecursively(file) is {State: ResultState.Error, ErrorMessage
-                            :
-                            var message})
-                        {
-                            Console.BackgroundColor = ConsoleColor.White;
-                            Console.ForegroundColor = ConsoleColor.Black;
-                            Console.WriteLine($"{file}: {message}");
-                            Console.ResetColor();
-                        }
-                        else
-                        {
-                            Console.WriteLine($"{file}: OK");
-                        }
-                    }
-
-                    Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер");
-                    Console.ReadLine();
-                    manager.Refresh();
-                }
+                OnAnswered = _ => manager.RootContainer.Loop.OnPaused = Delete
             }.Show(manager.RootContainer);
         }
 
@@ -392,6 +431,7 @@ namespace FileManager
                         NewFile(filename, encoding);
                         break;
                 }
+
                 manager.Refresh();
             })));
         }

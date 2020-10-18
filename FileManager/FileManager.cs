@@ -137,12 +137,21 @@ namespace FileManager
                     // Exists
                     case { State: ResultState.Ok, Value: var directoryInfo }:
                     {
+                        Environment.CurrentDirectory = directoryInfo.FullName;
                         CurrentDirectory = directoryInfo;
                         break;
                     }
                     case { State: ResultState.Error, ErrorMessage: var message}:
-                        // TODO: Show error message
+                    {
+                        var popup = new Popup()
+                            .Add(new MultilineLabel($"Не удалось сменить директорию: {message}."))
+                            .Add(new MultilineLabel("Нажмите «/», чтобы перейти к списку дисков."));
+                        var button = new Button("Понятно.");
+                        button.AsIKeyHandler().Add(KeySelector.SelectItem, popup.Close);
+                        popup.Add(button).AndFocus()
+                            .Show(RootContainer);
                         break;
+                    }
                 }
             }
 
