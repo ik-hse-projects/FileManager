@@ -206,14 +206,120 @@ namespace FileManager
             }.Show(manager.RootContainer);
         }
 
-        private void ConcatFile(string path, Encoding encoding)
+        private void ConcatFile(string targetPath, Encoding encoding)
         {
-            // TODO
+            using var destination = SafeIO.CreateFile(targetPath, encoding);
+
+            if (destination.State == ResultState.Error)
+            {
+                Console.BackgroundColor = ConsoleColor.White;
+                Console.ForegroundColor = ConsoleColor.Black;
+                Console.WriteLine($"Невозможно создать файл: {destination.ErrorMessage}");
+                Console.ResetColor();
+                return;
+            }
+
+            foreach (var path in manager.SelectedFiles)
+            {
+                using var maybeReader = SafeIO.GetFullPath(path)
+                    .AndThen(fullPath => SafeIO.StreamReader(fullPath, encoding));
+                if (maybeReader.State == ResultState.Error)
+                {
+                    Console.BackgroundColor = ConsoleColor.White;
+                    Console.ForegroundColor = ConsoleColor.Black;
+                    Console.WriteLine($"{path}: {maybeReader.ErrorMessage}");
+                    Console.ResetColor();
+                    goto EndOfFile;
+                }
+
+                foreach (var maybeBlock in maybeReader.Value.ReadBlocks())
+                {
+                    if (maybeBlock.State == ResultState.Error)
+                    {
+                        Console.BackgroundColor = ConsoleColor.White;
+                        Console.ForegroundColor = ConsoleColor.Black;
+                        Console.WriteLine($"{path}: {maybeBlock.ErrorMessage}");
+                        Console.ResetColor();
+                        goto EndOfFile;
+                    }
+
+                    foreach (var c in maybeBlock.Value)
+                    {
+                        destination.Value.Write(c);
+                    }
+                }
+
+                Console.WriteLine($"{path}: OK");
+
+                EndOfFile: ;
+            }
         }
 
-        private void NewFile(string path, Encoding encoding)
+        private IEnumerable<string> ReadLinesFromUser()
         {
-            // TODO
+            var emptyLinesCounter = 0;
+            while (true)
+            {
+                var key = Console.ReadLine();
+                if (key != "")
+                {
+                    while (emptyLinesCounter != 0)
+                    {
+                        yield return "";
+                        emptyLinesCounter--;
+                    }
+
+                    if (key != null)
+                    {
+                        yield return key;
+                    }
+                    else
+                    {
+                        yield break;
+                    }
+                }
+                else
+                {
+                    emptyLinesCounter++;
+                    if (emptyLinesCounter == 3)
+                    {
+                        yield break;
+                    }
+                }
+            }
+        }
+
+        private void NewFile(string targetPath, Encoding encoding)
+        {
+            using var destination = SafeIO.CreateFile(targetPath, encoding);
+
+            if (destination.State == ResultState.Error)
+            {
+                Console.BackgroundColor = ConsoleColor.White;
+                Console.ForegroundColor = ConsoleColor.Black;
+                Console.WriteLine($"Невозможно создать файл: {destination.ErrorMessage}");
+                Console.ResetColor();
+
+                Console.WriteLine("Нажмите Enter, чтобы закончить");
+                Console.ReadLine();
+                return;
+            }
+
+            Console.WriteLine("Введите строки файла. Чтобы завершить ввод, три раза подряд нажмите Enter.");
+            foreach (var line in ReadLinesFromUser())
+            {
+                if (destination.Value.WriteLineSafe(line) is {State: ResultState.Error, ErrorMessage: var message})
+                {
+                    Console.BackgroundColor = ConsoleColor.White;
+                    Console.ForegroundColor = ConsoleColor.Black;
+                    Console.WriteLine($"О ужас! {message}");
+                    Console.ResetColor();
+
+                    Console.WriteLine("Нажмите Enter, чтобы закончить");
+                    Console.ReadLine();
+                    return;
+                }
+            }
         }
 
         private void CreateFile(Encoding? encoding = null)
@@ -256,24 +362,26 @@ namespace FileManager
             void AskFilename(Action<string> then)
             {
                 var popup = new Popup()
-                    .Add(new MultilineLabel("Введите имя файла:"));
+                    .Add(new MultilineLabel("Внимание: существующие файлы будут очищены и перезаписаны!"))
+                    .Add(new MultilineLabel("Введите имя новго файла:"));
 
                 var input = new InputField
                 {
-                    Placeholder = new Placeholder(Style.Decoration, "Введите имя файла"),
+                    Placeholder = new Placeholder(Style.Decoration, "Имя файла"),
                 };
+                input.AllowedChars.Add(CharRange.FilenameChars);
                 input.AsIKeyHandler()
                     .Add(KeySelector.SelectItem, () =>
                     {
                         popup.Close();
-                        then(input.Text.ToString());
+                        then(Path.Combine(manager.CurrentDirectory.FullName, input.Text.ToString()));
                     });
                 popup.Add(input)
                     .AndFocus()
                     .Show(manager.RootContainer);
             }
 
-            AskMode(mode => AskEncoding(encoding => AskFilename(filename =>
+            AskMode(mode => AskEncoding(encoding => AskFilename(filename => manager.RootContainer.Loop.OnPaused = () =>
             {
                 switch (mode)
                 {
@@ -284,6 +392,7 @@ namespace FileManager
                         NewFile(filename, encoding);
                         break;
                 }
+                manager.Refresh();
             })));
         }
     }

@@ -262,5 +262,54 @@ namespace FileManager.Safety
                 return Result<object>.Error("Неопознанная ошибка");
             }
         }
+
+        public static Result<StreamWriter> CreateFile(string path, Encoding encoding)
+        {
+            try
+            {
+                return Result<StreamWriter>.Ok(new StreamWriter(File.Create(path), encoding));
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Result<StreamWriter>.Error("Отсутствует необходимое разрешение.");
+            }
+            catch (ArgumentException)
+            {
+                return Result<StreamWriter>.Error("Некорректный путь.");
+            }
+            catch (PathTooLongException)
+            {
+                return Result<StreamWriter>.Error("Путь слишком велик.");
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return Result<StreamWriter>.Error("Путь не существует.");
+            }
+            catch (IOException)
+            {
+                return Result<StreamWriter>.Error("Невозможно удалить.");
+            }
+            catch (NotSupportedException)
+            {
+                return Result<StreamWriter>.Error("Неподдерживаемый файл.");
+            }
+            catch (Exception)
+            {
+                return Result<StreamWriter>.Error("Неопознанная ошибка");
+            }
+        }
+
+        public static Result<object> WriteLineSafe(this StreamWriter writer, string line)
+        {
+            try
+            {
+                writer.WriteLine(line);
+                return Result<object>.Ok(new object());
+            }
+            catch (Exception)
+            {
+                return Result<object>.Error("Неопознанная ошибка");
+            }
+        }
     }
 }

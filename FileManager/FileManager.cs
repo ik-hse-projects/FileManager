@@ -115,7 +115,7 @@ namespace FileManager
             }
         }
 
-        public void ChangeDir(string to)
+        public void ChangeDir(string? to)
         {
             if (to == null)
             {
