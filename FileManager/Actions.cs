@@ -9,15 +9,28 @@ using Thuja.Widgets;
 
 namespace FileManager
 {
+    /// <summary>
+    /// Реализация всех команд.
+    /// </summary>
     public class Actions
     {
+        /// <summary>
+        /// Файловый менеджер, к которому эти команды относятся.
+        /// </summary>
         private readonly FileManager manager;
 
+        /// <summary>
+        /// Создает новый экземпляр. Рекомендуется вызывать Attach сразу после этого.
+        /// </summary>
+        /// <param name="manager">Файловый менеджер, к которому относятся эти команды.</param>
         public Actions(FileManager manager)
         {
             this.manager = manager;
         }
 
+        /// <summary>
+        /// Настраивает клавиши, чтобы нажатие на них вызывало команды.
+        /// </summary>
         public void Attach()
         {
             manager.RootContainer.AsIKeyHandler()
@@ -51,7 +64,10 @@ namespace FileManager
                     DeleteFiles);
         }
 
-        public void Help()
+        /// <summary>
+        /// Выводит подробную справку в консоль.
+        /// </summary>
+        private void Help()
         {
             manager.RootContainer.Loop.OnPaused = () =>
             {
@@ -78,6 +94,26 @@ namespace FileManager
             };
         }
 
+        /// <summary>
+        /// Список команд и их краткое описание.
+        /// </summary>
+        public static string[] Commands = {
+            "F1 / H — подробная справка",
+            "F2 / R — прочитать выбранные файлы в UTF8",
+            "Shift+R — выбрать кодировку и прочитать файлы",
+            "N — создать файл в UTF8",
+            "Shift+N — выбрать кодировку и создать файл",
+            "Ins или Пробел — выбрать или отменить выбор",
+            "F5 / C — вставить в текущую папку файлы.",
+            "F6 / M — переместить выбранные файлы.",
+            "F8 / Del / D — удалить все выбранные файлы",
+            "F10 / Q — закрыть файловый менеджер",
+        };
+
+        /// <summary>
+        /// Читает и выводит в консоль файл в выбранной кодировке.
+        /// </summary>
+        /// <param name="encoding">Выбранная кодировка. Если null, то просит пользователя выбрать.</param>
         private void ReadFiles(Encoding encoding = null)
         {
             AskEncoding(encoding, encoding => manager.RootContainer.Loop.OnPaused = () =>
@@ -130,19 +166,9 @@ namespace FileManager
             });
         }
 
-        public static string[] Commands = {
-            "F1 / H — подробная справка",
-            "F2 / R — прочитать выбранные файлы в UTF8",
-            "Shift+R — выбрать кодировку и прочитать файлы",
-            "N — создать файл в UTF8",
-            "Shift+N — выбрать кодировку и создать файл",
-            "Ins или Пробел — выбрать или отменить выбор",
-            "F5 / C — вставить в текущую папку файлы.",
-            "F6 / M — переместить выбранные файлы.",
-            "F8 / Del / D — удалить все выбранные файлы",
-            "F10 / Q — закрыть файловый менеджер",
-        };
-
+        /// <summary>
+        /// Коиприует все выбранные файлы в текущую директорию.
+        /// </summary>
         private void CopyFiles()
         {
             new Dialog<bool>
@@ -157,6 +183,10 @@ namespace FileManager
             }.Show(manager.RootContainer);
         }
 
+        /// <summary>
+        /// Проверяет, корректна ли текущая директория.
+        /// </summary>
+        /// <returns>Возвращает информацию о текущей директории.</returns>
         private Result<DirectoryInfo> CheckCurrentDir()
         {
             var result = SafeIO.DirectoryInfo(manager.CurrentDirectory?.FullName);
@@ -171,6 +201,10 @@ namespace FileManager
             return result;
         }
 
+        /// <summary>
+        /// Вспомогательный метод, который выводит сообщение об ошибке в консоль.
+        /// </summary>
+        /// <param name="message">Сообщение об ошибке.</param>
         private static void WriteErrorToConsole(string message)
         {
             Console.BackgroundColor = ConsoleColor.White;
@@ -179,6 +213,12 @@ namespace FileManager
             Console.ResetColor();
         }
 
+        /// <summary>
+        /// Вспомогательный метод, который выполняет некоторое действие для всех выделенных файлов
+        /// и выводит информацию о выполнении в консоль.
+        /// </summary>
+        /// <param name="action">Действие. В качестве аргмуента ему передается путь к файлу.</param>
+        /// <typeparam name="T">Некоторый тип.</typeparam>
         private void ForAllFiles<T>(Func<string, Result<T>> action)
         {
             foreach (var selectedFile in manager.SelectedFiles)
@@ -195,6 +235,10 @@ namespace FileManager
             }
         }
 
+        /// <summary>
+        /// Копирует все выбранные файлы в текущую директорию.
+        /// </summary>
+        /// <param name="overwrite">Перезаписывать ли существующие файлы.</param>
         private void CopyFiles(bool overwrite)
         {
             var target = CheckCurrentDir();
@@ -219,6 +263,9 @@ namespace FileManager
             };
         }
 
+        /// <summary>
+        /// Перемещает все выбранные файлы в текущую директорию.
+        /// </summary>
         private void MoveFiles()
         {
             void Delete()
@@ -246,6 +293,9 @@ namespace FileManager
             }.Show(manager.RootContainer);
         }
 
+        /// <summary>
+        /// Удаляает все выбранные файлы.
+        /// </summary>
         private void DeleteFiles()
         {
             void Delete()
@@ -267,6 +317,11 @@ namespace FileManager
             }.Show(manager.RootContainer);
         }
 
+        /// <summary>
+        /// Конкатенирует все выбранные файлы и записывает реузльтат в другой файл с выбранной кодировкой.
+        /// </summary>
+        /// <param name="targetPath">Файл, в который нужно всё записать.</param>
+        /// <param name="encoding">Выбранная кодировка.</param>
         private void ConcatFile(string targetPath, Encoding encoding)
         {
             using var destination = SafeIO.CreateFile(targetPath, encoding);
@@ -299,6 +354,10 @@ namespace FileManager
                 }));
         }
 
+        /// <summary>
+        /// Запрашивает у пользователя содержимое файла.
+        /// </summary>
+        /// <returns>Возвращает итератор по введённым строкам.</returns>
         private static IEnumerable<string> ReadLinesFromUser()
         {
             var emptyLinesCounter = 0;
@@ -333,6 +392,11 @@ namespace FileManager
             }
         }
 
+        /// <summary>
+        /// Создает новый файл с указанной кодировкой на основании введённого пользователем текста.
+        /// </summary>
+        /// <param name="targetPath">Куда необходимо записать файл.</param>
+        /// <param name="encoding">Выбранная кодировка.</param>
         private void NewFile(string targetPath, Encoding encoding)
         {
             using var destination = SafeIO.CreateFile(targetPath, encoding);
@@ -360,6 +424,11 @@ namespace FileManager
             }
         }
 
+        /// <summary>
+        /// Запрашивает у пользователя кодировку, если необходимо, после чего передаёт её в указанную функцию. 
+        /// </summary>
+        /// <param name="encoding">Кодировка, если она уже известна. Если null, то спрашивает пользователя.</param>
+        /// <param name="then">Действие, которое необходимо выполнить после того, как станет известна кодировка.</param>
         private void AskEncoding(Encoding? encoding, Action<Encoding> then)
         {
             if (encoding != null)
@@ -384,6 +453,10 @@ namespace FileManager
             }
         }
 
+        /// <summary>
+        /// Создает новый файл, спрашивая у пользователя все необходимые детали.
+        /// </summary>
+        /// <param name="encoding">Кодировка файла, если она известна. Иначе null.</param>
         private void CreateFile(Encoding? encoding = null)
         {
             if (CheckCurrentDir().State == ResultState.Error)

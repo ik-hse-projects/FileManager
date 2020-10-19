@@ -8,16 +8,41 @@ using Thuja.Widgets;
 
 namespace FileManager
 {
+    /// <summary>
+    /// Файловый менеджер.
+    /// </summary>
     public class FileManager
     {
+        /// <summary>
+        /// Текстовое поле, содержащее путь к текущей директории.
+        /// </summary>
         private readonly Label header;
 
+        /// <summary>
+        /// Список файлов в текущей директории.
+        /// </summary>
         private readonly StackContainer list;
 
+        /// <summary>
+        /// Ширина каждой из панелей.
+        /// </summary>
         private readonly int panelWidth;
+        
+        /// <summary>
+        /// Множество выбранных файлов и директорий.
+        /// </summary>
         private readonly OrderedSet<string> selectedSet;
+        
+        /// <summary>
+        /// Виджет, в котором отображается список выбранных файлов и директорий.
+        /// </summary>
         private readonly StackContainer selectedWidget;
 
+        /// <summary>
+        /// Создает новый экземпляр файлового менеджера.
+        /// </summary>
+        /// <param name="maxWidth">Максимальная используемая ширина.</param>
+        /// <param name="maxHeight">Максимальная используемая высота.</param>
         public FileManager(int maxWidth, int maxHeight)
         {
             CurrentDirectory = null;
@@ -53,16 +78,30 @@ namespace FileManager
         /// </summary>
         public DirectoryInfo? CurrentDirectory { get; private set; }
 
+        /// <summary>
+        /// Коллекция выбранных пользователем файлов.
+        /// </summary>
         public IReadOnlyCollection<string> SelectedFiles => selectedSet;
 
+        /// <summary>
+        /// Контейнер, в которомо находятся все виджеты менеджера.
+        /// </summary>
         public BaseContainer RootContainer { get; }
 
+        /// <summary>
+        /// Регистрирует и настраивает все возможные команды.
+        /// </summary>
         public void AttachActions()
         {
             new Actions(this).Attach();
         }
 
-        private Action CreateAddAction(FileSystemInfo entry)
+        /// <summary>
+        /// Возвращает действие, котороео добавит указанную запись в список выбранных объектов.
+        /// </summary>
+        /// <param name="entry">Запись, которую потребуется добавить.</param>
+        /// <returns>Действие, которое добавит запись.</returns>
+        private Action CreateAddToSelectedAction(FileSystemInfo entry)
         {
             return () =>
             {
@@ -86,6 +125,9 @@ namespace FileManager
             };
         }
 
+        /// <summary>
+        /// Обновляет список файлов в панели со списком файлов в текущей директории.
+        /// </summary>
         private void UpdateCurrentDir()
         {
             if (CurrentDirectory == null)
@@ -106,7 +148,7 @@ namespace FileManager
 
             foreach (var entry in infos.Value.OrderBy(i => i?.Name))
             {
-                var action = CreateAddAction(entry);
+                var action = CreateAddToSelectedAction(entry);
                 var button = new Button("", panelWidth);
                 button.AsIKeyHandler()
                     .Add(new KeySelector(ConsoleKey.Insert), action)
@@ -129,6 +171,10 @@ namespace FileManager
             }
         }
 
+        /// <summary>
+        /// Отображает некоторые свойства файла.
+        /// </summary>
+        /// <param name="path">Путь к файлу.</param>
         private void ShowInfo(string path)
         {
             var info = new FileInfo(path);
@@ -144,6 +190,10 @@ namespace FileManager
                 .Show(RootContainer);
         }
 
+        /// <summary>
+        /// Меняет текущую директорию.
+        /// </summary>
+        /// <param name="to">В какую директорию нужно перейти. null, если к списку дисков.</param>
         public void ChangeDir(string? to)
         {
             if (to == null)
@@ -178,6 +228,9 @@ namespace FileManager
             Refresh();
         }
 
+        /// <summary>
+        /// Обновляет левую панель.
+        /// </summary>
         public void Refresh()
         {
             list.Clear();
@@ -202,6 +255,13 @@ namespace FileManager
             }
         }
 
+        /// <summary>
+        /// Отображает пользователю диалог с информацией об ошибке, если таковая произошла.
+        /// </summary>
+        /// <param name="result">Результат выполнения некоторого действия, которое, возможно, обернулось неудачей.</param>
+        /// <param name="description">Описание ошибки.</param>
+        /// <param name="recommendation">Рекомендации: что может помочь пользователю.</param>
+        /// <typeparam name="T">Некоторый тип.</typeparam>
         private void ShowError<T>(Result<T> result, string description, string recommendation = "")
         {
             if (result is {State: ResultState.Error, ErrorMessage: var error})

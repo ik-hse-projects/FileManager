@@ -5,10 +5,11 @@ namespace FileManager
 {
     internal class Program
     {
+        /// <summary>
+        /// Точка входа.
+        /// </summary>
         private static void Main()
         {
-            // Краткость — сестра таланта.
-            // Нужно уложиться в 40 символов (половину ширины терминала) и 23 строки (высота терминала - 1).
             var help = new StackContainer()
                 .Add(new Label("        `7MM\"\"\"YMM `7MMM.     ,MMF'"))
                 .Add(new Label("          MM    `7   MMMb    dPMM"))
