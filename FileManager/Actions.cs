@@ -268,17 +268,6 @@ namespace FileManager
         /// </summary>
         private void MoveFiles()
         {
-            void Delete()
-            {
-                Console.WriteLine("Перемещаем...");
-
-                ForAllFiles(file => SafeIO.Move(file, manager.CurrentDirectory?.FullName));
-
-                Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер");
-                Console.ReadLine();
-                manager.Refresh();
-            }
-
             var target = CheckCurrentDir();
             if (target.State == ResultState.Error)
             {
@@ -289,7 +278,20 @@ namespace FileManager
             {
                 Question = $"Точно переместить {manager.SelectedFiles.Count} объектов?",
                 Answers = new[] {("Да", new object())},
-                OnAnswered = _ => manager.RootContainer.Loop.OnPaused = Delete
+                OnAnswered = _ => manager.RootContainer.Loop.OnPaused = () =>
+                {
+                    Console.WriteLine("Перемещаем...");
+
+                    ForAllFiles(file =>
+                    {
+                        var newLocation = Path.Combine(target.Value.FullName, Path.GetFileName(file));
+                        return SafeIO.Move(file, newLocation);
+                    });
+
+                    Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер");
+                    Console.ReadLine();
+                    manager.Refresh();
+                }
             }.Show(manager.RootContainer);
         }
 
