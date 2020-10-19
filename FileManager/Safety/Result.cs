@@ -10,15 +10,23 @@ namespace FileManager.Safety
 
     public class Result<T> : IDisposable
     {
+        public readonly string ErrorMessage;
         public readonly ResultState State;
         public readonly T Value;
-        public readonly string ErrorMessage;
 
         private Result(ResultState state, T value, string errorMessage)
         {
             State = state;
             Value = value;
             ErrorMessage = errorMessage;
+        }
+
+        public void Dispose()
+        {
+            if (State == ResultState.Ok && Value is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
         }
 
         public static Result<T> Ok(T value)
@@ -39,7 +47,7 @@ namespace FileManager.Safety
                 ResultState.Error => Result<U>.Error(ErrorMessage)
             };
         }
-        
+
         public Result<U> AndThen<U>(Func<T, Result<U>> func)
         {
             return State switch
@@ -47,14 +55,6 @@ namespace FileManager.Safety
                 ResultState.Ok => func(Value),
                 ResultState.Error => Result<U>.Error(ErrorMessage)
             };
-        }
-
-        public void Dispose()
-        {
-            if (State == ResultState.Ok && Value is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
         }
     }
 }

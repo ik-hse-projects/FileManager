@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using FileManager.Safety;
 using Thuja;
@@ -11,7 +10,7 @@ namespace FileManager
 {
     public class Actions
     {
-        private FileManager manager;
+        private readonly FileManager manager;
 
         public Actions(FileManager manager)
         {
@@ -122,7 +121,7 @@ namespace FileManager
                 Answers = new[]
                 {
                     ("Не перезаписывать", false),
-                    ("Перезаписывать", true),
+                    ("Перезаписывать", true)
                 },
                 OnAnswered = CopyFiles
             }.Show(manager.RootContainer);
@@ -135,7 +134,7 @@ namespace FileManager
             {
                 new Dialog<object>
                 {
-                    Question = $"Невозможно копировать файлы в текущую директорию: {target.ErrorMessage}",
+                    Question = $"Невозможно копировать файлы в текущую директорию: {target.ErrorMessage}"
                 }.Show(manager.RootContainer);
                 return;
             }
@@ -175,7 +174,8 @@ namespace FileManager
 
                 foreach (var file in manager.SelectedFiles)
                 {
-                    if (SafeIO.Move(file, manager.CurrentDirectory?.FullName) is {State: ResultState.Error, ErrorMessage : var message})
+                    if (SafeIO.Move(file, manager.CurrentDirectory?.FullName) is {State: ResultState.Error, ErrorMessage
+                        : var message})
                     {
                         Console.BackgroundColor = ConsoleColor.White;
                         Console.ForegroundColor = ConsoleColor.Black;
@@ -192,13 +192,13 @@ namespace FileManager
                 Console.ReadLine();
                 manager.Refresh();
             }
-            
+
             var target = SafeIO.DirectoryInfo(manager.CurrentDirectory?.FullName);
             if (target.State == ResultState.Error)
             {
                 new Dialog<object>
                 {
-                    Question = $"Невозможно копировать файлы в текущую директорию: {target.ErrorMessage}",
+                    Question = $"Невозможно копировать файлы в текущую директорию: {target.ErrorMessage}"
                 }.Show(manager.RootContainer);
                 return;
             }
@@ -371,7 +371,7 @@ namespace FileManager
                     Answers = new[]
                     {
                         ("Конкатенировать существующие", 1),
-                        ("Ввести вручную", 2),
+                        ("Ввести вручную", 2)
                     },
                     OnAnswered = then
                 }.Show(manager.RootContainer);
@@ -391,7 +391,7 @@ namespace FileManager
                         Answers = new[]
                         {
                             ("UTF8", Encoding.UTF8),
-                            ("ASCII", Encoding.ASCII),
+                            ("ASCII", Encoding.ASCII)
                         },
                         OnAnswered = then
                     }.Show(manager.RootContainer);
@@ -406,7 +406,7 @@ namespace FileManager
 
                 var input = new InputField
                 {
-                    Placeholder = new Placeholder(Style.Decoration, "Имя файла"),
+                    Placeholder = new Placeholder(Style.Decoration, "Имя файла")
                 };
                 input.AllowedChars.Add(CharRange.FilenameChars);
                 input.AsIKeyHandler()

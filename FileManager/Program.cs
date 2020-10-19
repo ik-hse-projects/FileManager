@@ -1,12 +1,11 @@
-﻿using System;
-using Thuja;
+﻿using Thuja;
 using Thuja.Widgets;
 
 namespace FileManager
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             // Краткость — сестра таланта.
             // Нужно уложиться в 40 символов (половину ширины терминала) и 23 строки (высота терминала - 1).

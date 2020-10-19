@@ -9,51 +9,52 @@ namespace FileManager
 {
     public class FileManager
     {
-        /// <summary>
-        /// Информация о текущей директории
-        /// </summary>
-        public DirectoryInfo? CurrentDirectory { get; private set; }
-        public IReadOnlyCollection<string> SelectedFiles => selectedSet;
-
-        public BaseContainer RootContainer => rootContainer;
-
-        private readonly StackContainer list;
-        private readonly StackContainer selectedWidget;
-        private readonly OrderedSet<string> selectedSet;
         private readonly Label header;
 
+        private readonly StackContainer list;
+
         private readonly int panelWidth;
-        private readonly BaseContainer rootContainer;
+        private readonly OrderedSet<string> selectedSet;
+        private readonly StackContainer selectedWidget;
 
         public FileManager(int maxWidth, int maxHeight)
         {
             CurrentDirectory = null;
-            panelWidth = (maxWidth / 2) - 2;
+            panelWidth = maxWidth / 2 - 2;
             list = new StackContainer(Orientation.Vertical, maxVisibleCount: maxHeight - 3);
             header = new Label("", maxWidth);
             selectedWidget = new StackContainer(Orientation.Vertical, maxVisibleCount: maxHeight - 3);
             selectedSet = new OrderedSet<string>();
 
-            var wrappedList = new RelativePosition(0, 1, 0)
+            var wrappedList = new RelativePosition(0, 1)
                 .Add(new Frame(Style.DarkGrayOnDefault)
                     .Add(list));
             var wrappedSelected = new RelativePosition(40, 1, 1)
                 .Add(new Frame(Style.DarkGrayOnDefault)
                     .Add(selectedWidget));
-            rootContainer = new BaseContainer()
+            RootContainer = new BaseContainer()
                 .Add(new RelativePosition(0, 0, 1)
                     .Add(header))
                 .AddFocused(wrappedList)
                 .Add(wrappedSelected);
-            rootContainer.AsIKeyHandler()
+            RootContainer.AsIKeyHandler()
                 .Add(new[] {new KeySelector(ConsoleKey.F10), new KeySelector(ConsoleKey.Escape)},
-                    () => rootContainer.Loop.OnStop = () => Console.WriteLine("До новых встреч!"));
+                    () => RootContainer.Loop.OnStop = () => Console.WriteLine("До новых встреч!"));
             list.AsIKeyHandler()
                 .Add(new[] {new KeySelector('/'), new KeySelector('\\')}, () => ChangeDir(null))
-                .Add(new KeySelector(ConsoleKey.Tab), () => rootContainer.Focused = wrappedSelected);
+                .Add(new KeySelector(ConsoleKey.Tab), () => RootContainer.Focused = wrappedSelected);
             selectedWidget.AsIKeyHandler()
-                .Add(new KeySelector(ConsoleKey.Tab), () => rootContainer.Focused = wrappedList);
+                .Add(new KeySelector(ConsoleKey.Tab), () => RootContainer.Focused = wrappedList);
         }
+
+        /// <summary>
+        ///     Информация о текущей директории
+        /// </summary>
+        public DirectoryInfo? CurrentDirectory { get; private set; }
+
+        public IReadOnlyCollection<string> SelectedFiles => selectedSet;
+
+        public BaseContainer RootContainer { get; }
 
         public void AttachActions()
         {
@@ -70,7 +71,7 @@ namespace FileManager
                     btn.Add(new[]
                     {
                         new KeySelector(ConsoleKey.Delete),
-                        new KeySelector(ConsoleKey.Backspace),
+                        new KeySelector(ConsoleKey.Backspace)
                     }, () =>
                     {
                         selectedSet.Remove(entry.FullName);
@@ -134,7 +135,6 @@ namespace FileManager
                     .AndThen(SafeIO.DirectoryInfo);
                 switch (isExists)
                 {
-                    // Exists
                     case { State: ResultState.Ok, Value: var directoryInfo }:
                     {
                         Environment.CurrentDirectory = directoryInfo.FullName;
