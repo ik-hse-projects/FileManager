@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using FileManager.Safety;
 using Thuja;
@@ -20,29 +21,66 @@ namespace FileManager
         public void Attach()
         {
             manager.RootContainer.AsIKeyHandler()
-                // F2 | Ctrl+R: Прочитать файл в UTF8.
-                .Add(new[] {new KeySelector(ConsoleKey.F2), new KeySelector(ConsoleKey.R, ConsoleModifiers.Control)},
+                // F1 | H: Помощь.
+                .Add(new[] {new KeySelector(ConsoleKey.F1), new KeySelector(ConsoleKey.H)}, Help)
+                // F2 | R: Прочитать файл в UTF8.
+                .Add(new[] {new KeySelector(ConsoleKey.F2), new KeySelector(ConsoleKey.R)},
                     () => ReadFiles(Encoding.UTF8))
-                // F3 | Ctrl+O: Прочитать файл в выбранной кодировке.
-                .Add(new[] {new KeySelector(ConsoleKey.F3), new KeySelector(ConsoleKey.O, ConsoleModifiers.Control)},
-                    ReadFiles)
-                // F4 | Ctrl+N: Создать UTF-8.
-                .Add(new[] {new KeySelector(ConsoleKey.F4), new KeySelector(ConsoleKey.N, ConsoleModifiers.Control)},
+                // Shift+R: Прочитать файл в выбранной кодировке.
+                .Add(new[] {new KeySelector(ConsoleKey.R, ConsoleModifiers.Shift)},
+                    () => ReadFiles())
+                // F4 | N: Создать файл в UTF8.
+                .Add(new[] {new KeySelector(ConsoleKey.F4), new KeySelector(ConsoleKey.N)},
                     () => CreateFile(Encoding.UTF8))
-                // F5 | Ctrl+C: Скопировать файлы.
-                .Add(new[] {new KeySelector(ConsoleKey.F5), new KeySelector(ConsoleKey.C, ConsoleModifiers.Control)},
+                // Shift+N: Создать файл в выбранной кодировке.
+                .Add(new[] {new KeySelector(ConsoleKey.N, ConsoleModifiers.Shift)},
+                    () => CreateFile())
+                // F5 | C: Копировать файлы.
+                .Add(new[] {new KeySelector(ConsoleKey.F5), new KeySelector(ConsoleKey.C)},
                     CopyFiles)
-                // F6 | Ctrl+X: Переместить файлы.
-                .Add(new[] {new KeySelector(ConsoleKey.F6), new KeySelector(ConsoleKey.X, ConsoleModifiers.Control)},
+                // F6 | M: Переместить файлы.
+                .Add(new[] {new KeySelector(ConsoleKey.F6), new KeySelector(ConsoleKey.M)},
                     MoveFiles)
-                // F8 | Delete: Удалить файлы.
-                .Add(new[] {new KeySelector(ConsoleKey.F8), new KeySelector(ConsoleKey.Delete)},
+                // F8 | Delete | D: Удалить файлы.
+                .Add(new[]
+                    {
+                        new KeySelector(ConsoleKey.F8),
+                        new KeySelector(ConsoleKey.Delete),
+                        new KeySelector(ConsoleKey.D),
+                    },
                     DeleteFiles);
         }
 
-        private void ReadFiles(Encoding encoding)
+        public void Help()
         {
             manager.RootContainer.Loop.OnPaused = () =>
+            {
+                Console.WriteLine("В менеджере есть две панели:");
+                Console.WriteLine("    В левой находится список файлов в теущей директории.");
+                Console.WriteLine("    В правой список выбранных файлов. Это аргументы команд.");
+                Console.WriteLine("    А над ними отображается текущая директория.");
+                Console.WriteLine("Для навигации можно и нужно использовать стрелочки и клавиши PageUp, PageDown, Home, End");
+                Console.WriteLine("Чтобы выполнить команду, необходимо сначала выбрать файлы или директории при помощи" +
+                                  " клавиш Пробел или Ins, после чего нажать соответствующую клавишу.");
+                Console.WriteLine("Если необходимо отменить выбор того или иного файла, то нужно перейти в правую панель" +
+                                  " при помощи Tab, после чего выделить желаемый файл и нажать Enter или Пробел." +
+                                  " После этого можно вернуться в левую панель повторным нажатием Tab.");
+                Console.WriteLine("Чтобы перейти в другую директорию, нужно выделить папку в левой панели и нажать Enter." +
+                                  " Если выделить **файл** и нажать Enter, то отобразятся некоторые его свойства.");
+                Console.WriteLine();
+                Console.WriteLine("Правая панель может закрывать список команд. Но всегда можно нажать F1, чтобы увидеть их снова.");
+                foreach (var command in Commands)
+                {
+                    Console.WriteLine($"    {command}");
+                }
+                Console.WriteLine("\nНажмите Enter чтобы вернуться в файловый менеджер.");
+                Console.ReadLine();
+            };
+        }
+
+        private void ReadFiles(Encoding encoding = null)
+        {
+            AskEncoding(encoding, encoding => manager.RootContainer.Loop.OnPaused = () =>
             {
                 var errors = new List<(string filename, string message)>();
 
@@ -89,22 +127,21 @@ namespace FileManager
                 Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер.");
                 Console.ResetColor();
                 Console.ReadLine();
-            };
+            });
         }
 
-        private void ReadFiles()
-        {
-            new Dialog<Encoding>
-            {
-                Question = "Выберите кодировку",
-                Answers = new[]
-                {
-                    ("UTF8", Encoding.UTF8),
-                    ("ASCII", Encoding.ASCII)
-                },
-                OnAnswered = ReadFiles
-            }.Show(manager.RootContainer);
-        }
+        public static string[] Commands = {
+            "F1 / H — подробная справка",
+            "F2 / R — прочитать выбранные файлы в UTF8",
+            "Shift+R — выбрать кодировку и прочитать файлы",
+            "N — создать файл в UTF8",
+            "Shift+N — выбрать кодировку и создать файл",
+            "Ins или Пробел — выбрать или отменить выбор",
+            "F5 / C — вставить в текущую папку файлы.",
+            "F6 / M — переместить выбранные файлы.",
+            "F8 / Del / D — удалить все выбранные файлы",
+            "F10 / Q — закрыть файловый менеджер",
+        };
 
         private void CopyFiles()
         {
@@ -323,6 +360,30 @@ namespace FileManager
             }
         }
 
+        private void AskEncoding(Encoding? encoding, Action<Encoding> then)
+        {
+            if (encoding != null)
+            {
+                then(encoding);
+            }
+            else
+            {
+                // UTF8 and all other available
+                var encodings = new[] {("UTF8", Encoding.UTF8)}
+                    .Concat(
+                        Encoding.GetEncodings()
+                            .Where(info => info.CodePage != Encoding.UTF8.CodePage)
+                            .Select(info => (info.DisplayName.ToString(), info.GetEncoding()))
+                    ).ToArray();
+                new Dialog<Encoding>
+                {
+                    Question = "Выберите кодировку",
+                    Answers = encodings,
+                    OnAnswered = then
+                }.Show(manager.RootContainer);
+            }
+        }
+
         private void CreateFile(Encoding? encoding = null)
         {
             if (CheckCurrentDir().State == ResultState.Error)
@@ -342,27 +403,6 @@ namespace FileManager
                     },
                     OnAnswered = then
                 }.Show(manager.RootContainer);
-            }
-
-            void AskEncoding(Action<Encoding> then)
-            {
-                if (encoding != null)
-                {
-                    then(encoding);
-                }
-                else
-                {
-                    new Dialog<Encoding>
-                    {
-                        Question = "Как вы хотите создать файл?",
-                        Answers = new[]
-                        {
-                            ("UTF8", Encoding.UTF8),
-                            ("ASCII", Encoding.ASCII)
-                        },
-                        OnAnswered = then
-                    }.Show(manager.RootContainer);
-                }
             }
 
             void AskFilename(Action<string> then)
@@ -387,20 +427,22 @@ namespace FileManager
                     .Show(manager.RootContainer);
             }
 
-            AskMode(mode => AskEncoding(encoding => AskFilename(filename => manager.RootContainer.Loop.OnPaused = () =>
-            {
-                switch (mode)
-                {
-                    case 1:
-                        ConcatFile(filename, encoding);
-                        break;
-                    case 2:
-                        NewFile(filename, encoding);
-                        break;
-                }
+            AskMode(mode => AskEncoding(encoding,
+                encoding => AskFilename(
+                    filename => manager.RootContainer.Loop.OnPaused = () =>
+                    {
+                        switch (mode)
+                        {
+                            case 1:
+                                ConcatFile(filename, encoding);
+                                break;
+                            case 2:
+                                NewFile(filename, encoding);
+                                break;
+                        }
 
-                manager.Refresh();
-            })));
+                        manager.Refresh();
+                    })));
         }
     }
 }

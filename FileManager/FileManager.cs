@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using FileManager.Safety;
 using Thuja;
 using Thuja.Widgets;
@@ -38,7 +39,7 @@ namespace FileManager
                 .AddFocused(wrappedList)
                 .Add(wrappedSelected);
             RootContainer.AsIKeyHandler()
-                .Add(new[] {new KeySelector(ConsoleKey.F10), new KeySelector(ConsoleKey.Escape)},
+                .Add(new[] {new KeySelector(ConsoleKey.F10), new KeySelector(ConsoleKey.Q)},
                     () => RootContainer.Loop.OnStop = () => Console.WriteLine("До новых встреч!"));
             list.AsIKeyHandler()
                 .Add(new[] {new KeySelector('/'), new KeySelector('\\')}, () => ChangeDir(null))
@@ -70,8 +71,10 @@ namespace FileManager
                     IKeyHandler btn = new Button(entry.FullName);
                     btn.Add(new[]
                     {
+                        new KeySelector(ConsoleKey.Spacebar),
+                        new KeySelector(ConsoleKey.Enter),
+                        new KeySelector(ConsoleKey.Insert),
                         new KeySelector(ConsoleKey.Delete),
-                        new KeySelector(ConsoleKey.Backspace)
                     }, () =>
                     {
                         selectedSet.Remove(entry.FullName);
@@ -101,7 +104,7 @@ namespace FileManager
                 return;
             }
 
-            foreach (var entry in infos.Value)
+            foreach (var entry in infos.Value.OrderBy(i => i?.Name))
             {
                 var action = CreateAddAction(entry);
                 var button = new Button("", panelWidth);
@@ -117,11 +120,28 @@ namespace FileManager
                 }
                 else
                 {
+                    button.AsIKeyHandler()
+                        .Add(new KeySelector(ConsoleKey.Enter), () => ShowInfo(entry.FullName));
                     button.Text = $"{entry.Name}";
                 }
 
                 list.Add(button);
             }
+        }
+
+        private void ShowInfo(string path)
+        {
+            var info = new FileInfo(path);
+            var isReadonly = info.IsReadOnly ? "да" : "нет";
+            new Popup()
+                .Add(new Label($"{info.Name}") {CurrentStyle = Style.Active})
+                .Add(new Label($"Размер: {info.Length}"))
+                .Add(new Label($"Только для чтения: {isReadonly}"))
+                .Add(new Label($"Расширение: {info.Extension}"))
+                .Add(new Label($"Создан: {info.CreationTime}"))
+                .Add(new Label($"Изменён: {info.LastWriteTime}"))
+                .AddClose("Закрыть").AndFocus()
+                .Show(RootContainer);
         }
 
         public void ChangeDir(string? to)
@@ -182,20 +202,16 @@ namespace FileManager
             }
         }
 
-        private Result<T> ShowError<T>(Result<T> result, string description, string recommendation = "")
+        private void ShowError<T>(Result<T> result, string description, string recommendation = "")
         {
             if (result is {State: ResultState.Error, ErrorMessage: var error})
             {
-                var popup = new Popup()
+                new Popup()
                     .Add(new MultilineLabel($"{description}: {error}"))
-                    .Add(new MultilineLabel(recommendation));
-                var button = new Button("Понятно.");
-                button.AsIKeyHandler().Add(KeySelector.SelectItem, popup.Close);
-                popup.Add(button).AndFocus()
+                    .Add(new MultilineLabel(recommendation))
+                    .AddClose("Понятно.").AndFocus()
                     .Show(RootContainer);
             }
-
-            return result;
         }
     }
 }
