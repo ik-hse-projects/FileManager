@@ -5,7 +5,7 @@ namespace FileManager
 {
     internal class Program
     {
-        private static void Main(string[] args)
+        private static void Main()
         {
             // Краткость — сестра таланта.
             // Нужно уложиться в 40 символов (половину ширины терминала) и 23 строки (высота терминала - 1).

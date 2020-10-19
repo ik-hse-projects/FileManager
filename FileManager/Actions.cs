@@ -294,7 +294,7 @@ namespace FileManager
             }
         }
 
-        private IEnumerable<string> ReadLinesFromUser()
+        private static IEnumerable<string> ReadLinesFromUser()
         {
             var emptyLinesCounter = 0;
             while (true)
@@ -363,6 +363,16 @@ namespace FileManager
 
         private void CreateFile(Encoding? encoding = null)
         {
+            if (SafeIO.DirectoryInfo(manager.CurrentDirectory?.FullName) is {State: ResultState.Error, ErrorMessage: var
+                error})
+            {
+                new Dialog<object>
+                {
+                    Question = $"Невозможно создать файл в текущей директории: {error}"
+                }.Show(manager.RootContainer);
+                return;
+            }
+
             void AskMode(Action<int> then)
             {
                 new Dialog<int>

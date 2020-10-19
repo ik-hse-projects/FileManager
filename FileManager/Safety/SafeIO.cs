@@ -67,6 +67,11 @@ namespace FileManager.Safety
         /// <returns>Новый экземпляра класса DirectoryInfo для заданного пути.</returns>
         public static Result<DirectoryInfo> DirectoryInfo(string? path)
         {
+            if (path == null)
+            {
+                return Result<DirectoryInfo>.Error("Некорректный путь");
+            }
+
             try
             {
                 return Result<DirectoryInfo>.Ok(new DirectoryInfo(path));
@@ -265,7 +270,7 @@ namespace FileManager.Safety
             }
         }
 
-        public static Result<object> Move(string from, string to)
+        public static Result<object> Move(string? from, string? to)
         {
             try
             {

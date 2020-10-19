@@ -31,12 +31,12 @@ namespace FileManager.Safety
 
         public static Result<T> Ok(T value)
         {
-            return new Result<T>(ResultState.Ok, value, null);
+            return new Result<T>(ResultState.Ok, value, null!);
         }
 
         public static Result<T> Error(string message)
         {
-            return new Result<T>(ResultState.Error, default, message);
+            return new Result<T>(ResultState.Error, default!, message);
         }
 
         public Result<U> Map<U>(Func<T, U> func)
