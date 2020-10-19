@@ -1,4 +1,5 @@
-﻿using Thuja;
+﻿using System;
+using Thuja;
 using Thuja.Widgets;
 
 namespace FileManager
@@ -32,7 +33,7 @@ namespace FileManager
 
             var manager = new FileManager(80, 24);
             manager.AttachActions();
-            manager.ChangeDir(null);
+            manager.ChangeDir(Environment.CurrentDirectory);
 
             var root = new BaseContainer()
                 .AddFocused(manager.RootContainer)

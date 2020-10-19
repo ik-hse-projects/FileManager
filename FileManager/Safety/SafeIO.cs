@@ -136,6 +136,7 @@ namespace FileManager.Safety
         public static IEnumerable<Result<IEnumerable<char>>> ReadBlocks(this StreamReader reader)
         {
             var buffer = new char[16 * 1024];
+            var count = 0;
             while (true)
             {
                 int bytes;
@@ -157,9 +158,17 @@ namespace FileManager.Safety
                         yield break;
                 }
 
+                count++;
                 if (bytes == buffer.Length)
                 {
                     yield return Result<IEnumerable<char>>.Ok(buffer);
+
+                    // Ограничение в примерно 100MB.
+                    if (count > 6400)
+                    {
+                        yield return Result<IEnumerable<char>>.Error("Файл слишком большой, часть была пропущена.");
+                        yield break;
+                    }
                 }
                 else
                 {
@@ -270,6 +279,9 @@ namespace FileManager.Safety
             }
         }
 
+        /// <summary>
+        /// Перемещает файл или директорию из одного места в другое.
+        /// </summary>
         public static Result<object> Move(string? from, string? to)
         {
             try

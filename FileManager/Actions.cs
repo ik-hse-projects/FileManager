@@ -39,14 +39,14 @@ namespace FileManager
                 // F2 | R: Прочитать файл в UTF8.
                 .Add(new[] {new KeySelector(ConsoleKey.F2), new KeySelector(ConsoleKey.R)},
                     () => ReadFiles(Encoding.UTF8))
-                // Shift+R: Прочитать файл в выбранной кодировке.
-                .Add(new[] {new KeySelector(ConsoleKey.R, ConsoleModifiers.Shift)},
+                // F3 | T: Прочитать файл в выбранной кодировке.
+                .Add(new[] {new KeySelector(ConsoleKey.F3), new KeySelector(ConsoleKey.T)},
                     () => ReadFiles())
                 // F4 | N: Создать файл в UTF8.
                 .Add(new[] {new KeySelector(ConsoleKey.F4), new KeySelector(ConsoleKey.N)},
                     () => CreateFile(Encoding.UTF8))
-                // Shift+N: Создать файл в выбранной кодировке.
-                .Add(new[] {new KeySelector(ConsoleKey.N, ConsoleModifiers.Shift)},
+                // M: Создать файл в выбранной кодировке.
+                .Add(new[] {new KeySelector(ConsoleKey.M)},
                     () => CreateFile())
                 // F5 | C: Копировать файлы.
                 .Add(new[] {new KeySelector(ConsoleKey.F5), new KeySelector(ConsoleKey.C)},
@@ -97,12 +97,12 @@ namespace FileManager
         /// <summary>
         /// Список команд и их краткое описание.
         /// </summary>
-        public static string[] Commands = {
+        public static readonly string[] Commands = {
             "F1 / H — подробная справка",
             "F2 / R — прочитать выбранные файлы в UTF8",
-            "Shift+R — выбрать кодировку и прочитать файлы",
+            "F3 / T — выбрать кодировку и прочитать файлы",
             "N — создать файл в UTF8",
-            "Shift+N — выбрать кодировку и создать файл",
+            "M — выбрать кодировку и создать файл",
             "Ins или Пробел — выбрать или отменить выбор",
             "F5 / C — вставить в текущую папку файлы.",
             "F6 / M — переместить выбранные файлы.",
@@ -158,6 +158,10 @@ namespace FileManager
                     {
                         Console.WriteLine($"{filename}: {message}");
                     }
+                }
+                if (manager.SelectedFiles.Count == 0)
+                {
+                    Console.WriteLine("Ни одного файла не было прочитано, потому что ни один не был выбран.");
                 }
 
                 Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер.");
