@@ -93,11 +93,19 @@ namespace FileManager
             list.Add(new Button("..")
                 .AsIKeyHandler()
                 .Add(new KeySelector(ConsoleKey.Enter), () => ChangeDir(CurrentDirectory.Parent?.FullName)));
-            foreach (var entry in CurrentDirectory.GetFileSystemInfos())
+            var infos = CurrentDirectory.SafeFileSystemInfos();
+            if (infos.State == ResultState.Error)
+            {
+                ShowError(infos, "Не удалось получить список файлов",
+                    "Попробуйте перейти в директорию выше или нажмите «/», чтобы вернуться к списку дисков");
+                return;
+            }
+
+            foreach (var entry in infos.Value)
             {
                 var action = CreateAddAction(entry);
-                var button = (Button) new Button("", panelWidth)
-                    .AsIKeyHandler()
+                var button = new Button("", panelWidth);
+                button.AsIKeyHandler()
                     .Add(new KeySelector(ConsoleKey.Insert), action)
                     .Add(new KeySelector(ConsoleKey.Spacebar), action);
 
@@ -133,33 +141,24 @@ namespace FileManager
                             : Result<string>.Error("Невозможно перейти в указанную директорию"))
                     )
                     .AndThen(SafeIO.DirectoryInfo);
-                switch (isExists)
+                var chDir = isExists
+                    .AndThen(dirInfo => SafeIO.ChangeCurrentDirectory(dirInfo.FullName));
+                ShowError(isExists, "Не удалось сменить директорию", "Нажмите «/», чтобы перейти к списку дисков.");
+                if (isExists is { State: ResultState.Ok, Value: var directoryInfo })
                 {
-                    case { State: ResultState.Ok, Value: var directoryInfo }:
+                    ShowError(chDir, "Не удалось сменить директорию", "Нажмите «/», чтобы перейти к списку дисков.");
+                    if (chDir.State == ResultState.Ok)
                     {
-                        Environment.CurrentDirectory = directoryInfo.FullName;
                         CurrentDirectory = directoryInfo;
-                        break;
-                    }
-                    case { State: ResultState.Error, ErrorMessage: var message}:
-                    {
-                        var popup = new Popup()
-                            .Add(new MultilineLabel($"Не удалось сменить директорию: {message}."))
-                            .Add(new MultilineLabel("Нажмите «/», чтобы перейти к списку дисков."));
-                        var button = new Button("Понятно.");
-                        button.AsIKeyHandler().Add(KeySelector.SelectItem, popup.Close);
-                        popup.Add(button).AndFocus()
-                            .Show(RootContainer);
-                        break;
                     }
                 }
             }
 
             header.Text = CurrentDirectory?.FullName ?? "";
-            UpdateList();
+            Refresh();
         }
 
-        private void UpdateList()
+        public void Refresh()
         {
             list.Clear();
             if (CurrentDirectory != null)
@@ -168,19 +167,35 @@ namespace FileManager
             }
             else
             {
-                foreach (var drive in Directory.GetLogicalDrives())
+                var maybeDrives = SafeIO.GetLogicalDrives();
+                ShowError(maybeDrives, "Не удалось получить список дисков", "Нажмите «/», чтобы попробовать ещё раз.");
+                if (maybeDrives is {State: ResultState.Ok, Value: var drives})
                 {
-                    var button = new Button(drive, panelWidth)
-                        .AsIKeyHandler()
-                        .Add(new KeySelector(ConsoleKey.Enter), () => ChangeDir(drive));
-                    list.Add(button);
+                    foreach (var drive in drives)
+                    {
+                        var button = new Button(drive, panelWidth)
+                            .AsIKeyHandler()
+                            .Add(new KeySelector(ConsoleKey.Enter), () => ChangeDir(drive));
+                        list.Add(button);
+                    }
                 }
             }
         }
 
-        public void Refresh()
+        private Result<T> ShowError<T>(Result<T> result, string description, string recommendation = "")
         {
-            UpdateList();
+            if (result is {State: ResultState.Error, ErrorMessage: var error})
+            {
+                var popup = new Popup()
+                    .Add(new MultilineLabel($"{description}: {error}"))
+                    .Add(new MultilineLabel(recommendation));
+                var button = new Button("Понятно.");
+                button.AsIKeyHandler().Add(KeySelector.SelectItem, popup.Close);
+                popup.Add(button).AndFocus()
+                    .Show(RootContainer);
+            }
+
+            return result;
         }
     }
 }

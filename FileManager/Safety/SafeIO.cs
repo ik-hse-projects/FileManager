@@ -362,5 +362,58 @@ namespace FileManager.Safety
                 return Result<object>.Error("Неопознанная ошибка");
             }
         }
+
+        public static Result<FileSystemInfo[]> SafeFileSystemInfos(this DirectoryInfo info)
+        {
+            try
+            {
+                return Result<FileSystemInfo[]>.Ok(info.GetFileSystemInfos());
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return Result<FileSystemInfo[]>.Error("Путь не существует.");
+            }
+            catch (Exception)
+            {
+                return Result<FileSystemInfo[]>.Error("Неопознанная ошибка");
+            }
+        }
+
+        public static Result<object> ChangeCurrentDirectory(string path)
+        {
+            try
+            {
+                Environment.CurrentDirectory = path;
+                return Result<object>.Ok(new object());
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Result<object>.Error("Отсутствует необходимое разрешение.");
+            }
+            catch (Exception)
+            {
+                return Result<object>.Error("Неопознанная ошибка");
+            }
+        }
+        
+        public static Result<string[]> GetLogicalDrives()
+        {
+            try
+            {
+                return Result<string[]>.Ok(Environment.GetLogicalDrives());
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Result<string[]>.Error("Отсутствует необходимое разрешение.");
+            }
+            catch (IOException)
+            {
+                return Result<string[]>.Error("Ошибка ввода-вывода.");
+            }
+            catch (Exception)
+            {
+                return Result<string[]>.Error("Неопознанная ошибка");
+            }
+        }
     }
 }
