@@ -45,41 +45,33 @@ namespace FileManager
             manager.RootContainer.Loop.OnPaused = () =>
             {
                 var errors = new List<(string filename, string message)>();
-                foreach (var path in manager.SelectedFiles)
+
+                foreach (var file in manager.SelectedFiles)
                 {
-                    using var maybeReader = SafeIO.GetFullPath(path)
-                        .AndThen(fullPath => SafeIO.StreamReader(fullPath, encoding));
-                    switch (maybeReader)
-                    {
-                        case { State: ResultState.Ok, Value: var reader }:
+                    var result = SafeIO
+                        .GetFullPath(file)
+                        .AndThen(fullPath => SafeIO.StreamReader(fullPath, encoding))
+                        .AndThen(reader =>
                         {
                             foreach (var maybeBlock in reader.ReadBlocks())
                             {
-                                switch (maybeBlock)
+                                if (maybeBlock.State == ResultState.Error)
                                 {
-                                    case {State: ResultState.Ok, Value: var block}:
-                                        foreach (var c in block)
-                                        {
-                                            Console.Write(c);
-                                        }
+                                    return maybeBlock.Map(_ => new object());
+                                }
 
-                                        break;
-                                    case { State: ResultState.Error, ErrorMessage: var message }:
-                                        errors.Add((path, message));
-                                        goto EndOfFile;
+                                foreach (var c in maybeBlock.Value)
+                                {
+                                    Console.Write(c);
                                 }
                             }
 
-                            break;
-                        }
-                        case { State: ResultState.Error, ErrorMessage: var message }:
-                        {
-                            errors.Add((path, message));
-                            break;
-                        }
+                            return Result<object>.Ok(new object());
+                        });
+                    if (result is {State: ResultState.Error, ErrorMessage: var error})
+                    {
+                        errors.Add((file, error));
                     }
-
-                    EndOfFile: ;
                 }
 
                 Console.ForegroundColor = ConsoleColor.Black;
@@ -95,6 +87,7 @@ namespace FileManager
                 }
 
                 Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер.");
+                Console.ResetColor();
                 Console.ReadLine();
             };
         }
@@ -127,38 +120,61 @@ namespace FileManager
             }.Show(manager.RootContainer);
         }
 
-        private void CopyFiles(bool overwrite)
+        private Result<DirectoryInfo> CheckCurrentDir()
         {
-            var target = SafeIO.DirectoryInfo(manager.CurrentDirectory?.FullName);
-            if (target.State == ResultState.Error)
+            var result = SafeIO.DirectoryInfo(manager.CurrentDirectory?.FullName);
+            if (result.State == ResultState.Error)
             {
                 new Dialog<object>
                 {
-                    Question = $"Невозможно копировать файлы в текущую директорию: {target.ErrorMessage}"
+                    Question = $"Невозможно работать с текущей директорией: {result.ErrorMessage}"
                 }.Show(manager.RootContainer);
+            }
+
+            return result;
+        }
+
+        private static void WriteErrorToConsole(string message)
+        {
+            Console.BackgroundColor = ConsoleColor.White;
+            Console.ForegroundColor = ConsoleColor.Black;
+            Console.WriteLine(message);
+            Console.ResetColor();
+        }
+
+        private void ForAllFiles<T>(Func<string, Result<T>> action)
+        {
+            foreach (var selectedFile in manager.SelectedFiles)
+            {
+                switch (action(selectedFile))
+                {
+                    case {State: ResultState.Error, ErrorMessage: var error}:
+                        WriteErrorToConsole($"{selectedFile}: {error}");
+                        break;
+                    case {State: ResultState.Ok}:
+                        Console.WriteLine($"{selectedFile}: OK");
+                        break;
+                }
+            }
+        }
+
+        private void CopyFiles(bool overwrite)
+        {
+            var target = CheckCurrentDir();
+            if (target.State == ResultState.Error)
+            {
                 return;
             }
 
             manager.RootContainer.Loop.OnPaused = () =>
             {
                 Console.WriteLine("Копируем...");
-                foreach (var selectedFile in manager.SelectedFiles)
+
+                ForAllFiles(file =>
                 {
-                    var newLocation = Path.Combine(target.Value.FullName, Path.GetFileName(selectedFile));
-                    if (SafeIO.CopyFile(selectedFile, newLocation, overwrite) is {State: ResultState.Error, ErrorMessage
-                        :
-                        var message})
-                    {
-                        Console.BackgroundColor = ConsoleColor.White;
-                        Console.ForegroundColor = ConsoleColor.Black;
-                        Console.WriteLine($"{selectedFile}: {message}");
-                        Console.ResetColor();
-                    }
-                    else
-                    {
-                        Console.WriteLine($"{selectedFile}: OK");
-                    }
-                }
+                    var newLocation = Path.Combine(target.Value.FullName, Path.GetFileName(file));
+                    return SafeIO.CopyFile(file, newLocation, overwrite);
+                });
 
                 Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер");
                 Console.ReadLine();
@@ -172,34 +188,16 @@ namespace FileManager
             {
                 Console.WriteLine("Перемещаем...");
 
-                foreach (var file in manager.SelectedFiles)
-                {
-                    if (SafeIO.Move(file, manager.CurrentDirectory?.FullName) is {State: ResultState.Error, ErrorMessage
-                        : var message})
-                    {
-                        Console.BackgroundColor = ConsoleColor.White;
-                        Console.ForegroundColor = ConsoleColor.Black;
-                        Console.WriteLine($"{file}: {message}");
-                        Console.ResetColor();
-                    }
-                    else
-                    {
-                        Console.WriteLine($"{file}: OK");
-                    }
-                }
+                ForAllFiles(file => SafeIO.Move(file, manager.CurrentDirectory?.FullName));
 
                 Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер");
                 Console.ReadLine();
                 manager.Refresh();
             }
 
-            var target = SafeIO.DirectoryInfo(manager.CurrentDirectory?.FullName);
+            var target = CheckCurrentDir();
             if (target.State == ResultState.Error)
             {
-                new Dialog<object>
-                {
-                    Question = $"Невозможно копировать файлы в текущую директорию: {target.ErrorMessage}"
-                }.Show(manager.RootContainer);
                 return;
             }
 
@@ -217,20 +215,7 @@ namespace FileManager
             {
                 Console.WriteLine("Удаляем...");
 
-                foreach (var file in manager.SelectedFiles)
-                {
-                    if (SafeIO.DeleteRecursively(file) is {State: ResultState.Error, ErrorMessage : var message})
-                    {
-                        Console.BackgroundColor = ConsoleColor.White;
-                        Console.ForegroundColor = ConsoleColor.Black;
-                        Console.WriteLine($"{file}: {message}");
-                        Console.ResetColor();
-                    }
-                    else
-                    {
-                        Console.WriteLine($"{file}: OK");
-                    }
-                }
+                ForAllFiles(SafeIO.DeleteRecursively);
 
                 Console.WriteLine("Нажмите Enter, чтобы вернуться в менеджер");
                 Console.ReadLine();
@@ -251,47 +236,30 @@ namespace FileManager
 
             if (destination.State == ResultState.Error)
             {
-                Console.BackgroundColor = ConsoleColor.White;
-                Console.ForegroundColor = ConsoleColor.Black;
-                Console.WriteLine($"Невозможно создать файл: {destination.ErrorMessage}");
-                Console.ResetColor();
+                WriteErrorToConsole($"Невозможно создать файл: {destination.ErrorMessage}");
                 return;
             }
 
-            foreach (var path in manager.SelectedFiles)
-            {
-                using var maybeReader = SafeIO.GetFullPath(path)
-                    .AndThen(fullPath => SafeIO.StreamReader(fullPath, encoding));
-                if (maybeReader.State == ResultState.Error)
+            ForAllFiles(file => SafeIO
+                .GetFullPath(file)
+                .AndThen(fullPath => SafeIO.StreamReader(fullPath, encoding))
+                .AndThen(reader =>
                 {
-                    Console.BackgroundColor = ConsoleColor.White;
-                    Console.ForegroundColor = ConsoleColor.Black;
-                    Console.WriteLine($"{path}: {maybeReader.ErrorMessage}");
-                    Console.ResetColor();
-                    goto EndOfFile;
-                }
-
-                foreach (var maybeBlock in maybeReader.Value.ReadBlocks())
-                {
-                    if (maybeBlock.State == ResultState.Error)
+                    foreach (var maybeBlock in reader.ReadBlocks())
                     {
-                        Console.BackgroundColor = ConsoleColor.White;
-                        Console.ForegroundColor = ConsoleColor.Black;
-                        Console.WriteLine($"{path}: {maybeBlock.ErrorMessage}");
-                        Console.ResetColor();
-                        goto EndOfFile;
+                        if (maybeBlock.State == ResultState.Error)
+                        {
+                            return maybeBlock.Map(_ => new object());
+                        }
+
+                        foreach (var c in maybeBlock.Value)
+                        {
+                            destination.Value.Write(c);
+                        }
                     }
 
-                    foreach (var c in maybeBlock.Value)
-                    {
-                        destination.Value.Write(c);
-                    }
-                }
-
-                Console.WriteLine($"{path}: OK");
-
-                EndOfFile: ;
-            }
+                    return Result<object>.Ok(new object());
+                }));
         }
 
         private static IEnumerable<string> ReadLinesFromUser()
@@ -334,10 +302,7 @@ namespace FileManager
 
             if (destination.State == ResultState.Error)
             {
-                Console.BackgroundColor = ConsoleColor.White;
-                Console.ForegroundColor = ConsoleColor.Black;
-                Console.WriteLine($"Невозможно создать файл: {destination.ErrorMessage}");
-                Console.ResetColor();
+                WriteErrorToConsole($"Невозможно создать файл: {destination.ErrorMessage}");
 
                 Console.WriteLine("Нажмите Enter, чтобы закончить");
                 Console.ReadLine();
@@ -349,10 +314,7 @@ namespace FileManager
             {
                 if (destination.Value.WriteLineSafe(line) is {State: ResultState.Error, ErrorMessage: var message})
                 {
-                    Console.BackgroundColor = ConsoleColor.White;
-                    Console.ForegroundColor = ConsoleColor.Black;
-                    Console.WriteLine($"О ужас! {message}");
-                    Console.ResetColor();
+                    WriteErrorToConsole($"О ужас! {message}");
 
                     Console.WriteLine("Нажмите Enter, чтобы закончить");
                     Console.ReadLine();
@@ -363,13 +325,8 @@ namespace FileManager
 
         private void CreateFile(Encoding? encoding = null)
         {
-            if (SafeIO.DirectoryInfo(manager.CurrentDirectory?.FullName) is {State: ResultState.Error, ErrorMessage: var
-                error})
+            if (CheckCurrentDir().State == ResultState.Error)
             {
-                new Dialog<object>
-                {
-                    Question = $"Невозможно создать файл в текущей директории: {error}"
-                }.Show(manager.RootContainer);
                 return;
             }
 
