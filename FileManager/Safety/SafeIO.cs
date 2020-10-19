@@ -133,6 +133,9 @@ namespace FileManager.Safety
             }
         }
 
+        /// <summary>
+        ///     Читает блоки (итераторы по символам) из потока.
+        /// </summary>
         public static IEnumerable<Result<IEnumerable<char>>> ReadBlocks(this StreamReader reader)
         {
             var buffer = new char[16 * 1024];
@@ -231,6 +234,9 @@ namespace FileManager.Safety
             }
         }
 
+        /// <summary>
+        ///     Удаляет объект по указанному пути полностью.
+        /// </summary>
         public static Result<object> DeleteRecursively(string path)
         {
             try
@@ -326,6 +332,9 @@ namespace FileManager.Safety
             }
         }
 
+        /// <summary>
+        ///     Создаёт файл по указанному пути и возвращает поток для записи в него.
+        /// </summary>
         public static Result<StreamWriter> CreateFile(string path, Encoding encoding)
         {
             try
@@ -362,6 +371,9 @@ namespace FileManager.Safety
             }
         }
 
+        /// <summary>
+        ///     Записывает в поток переданную строчку.
+        /// </summary>
         public static Result<object> WriteLineSafe(this StreamWriter writer, string line)
         {
             try
@@ -375,6 +387,9 @@ namespace FileManager.Safety
             }
         }
 
+        /// <summary>
+        ///     Получает информацию об объектах в указанной директории.
+        /// </summary>
         public static Result<FileSystemInfo[]> SafeFileSystemInfos(this DirectoryInfo info)
         {
             try
@@ -391,6 +406,9 @@ namespace FileManager.Safety
             }
         }
 
+        /// <summary>
+        ///     Меняет текущую директорию на указанную.
+        /// </summary>
         public static Result<object> ChangeCurrentDirectory(string path)
         {
             try
@@ -408,6 +426,9 @@ namespace FileManager.Safety
             }
         }
 
+        /// <summary>
+        ///     Получает список дисков.
+        /// </summary>
         public static Result<string[]> GetLogicalDrives()
         {
             try
