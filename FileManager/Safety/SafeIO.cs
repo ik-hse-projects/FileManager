@@ -280,7 +280,7 @@ namespace FileManager.Safety
         }
 
         /// <summary>
-        /// Перемещает файл или директорию из одного места в другое.
+        ///     Перемещает файл или директорию из одного места в другое.
         /// </summary>
         public static Result<object> Move(string? from, string? to)
         {
@@ -407,7 +407,7 @@ namespace FileManager.Safety
                 return Result<object>.Error("Неопознанная ошибка");
             }
         }
-        
+
         public static Result<string[]> GetLogicalDrives()
         {
             try

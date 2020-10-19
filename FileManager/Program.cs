@@ -7,7 +7,7 @@ namespace FileManager
     internal class Program
     {
         /// <summary>
-        /// Точка входа.
+        ///     Точка входа.
         /// </summary>
         private static void Main()
         {

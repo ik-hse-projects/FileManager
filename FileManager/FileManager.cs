@@ -9,37 +9,37 @@ using Thuja.Widgets;
 namespace FileManager
 {
     /// <summary>
-    /// Файловый менеджер.
+    ///     Файловый менеджер.
     /// </summary>
     public class FileManager
     {
         /// <summary>
-        /// Текстовое поле, содержащее путь к текущей директории.
+        ///     Текстовое поле, содержащее путь к текущей директории.
         /// </summary>
         private readonly Label header;
 
         /// <summary>
-        /// Список файлов в текущей директории.
+        ///     Список файлов в текущей директории.
         /// </summary>
         private readonly StackContainer list;
 
         /// <summary>
-        /// Ширина каждой из панелей.
+        ///     Ширина каждой из панелей.
         /// </summary>
         private readonly int panelWidth;
-        
+
         /// <summary>
-        /// Множество выбранных файлов и директорий.
+        ///     Множество выбранных файлов и директорий.
         /// </summary>
         private readonly OrderedSet<string> selectedSet;
-        
+
         /// <summary>
-        /// Виджет, в котором отображается список выбранных файлов и директорий.
+        ///     Виджет, в котором отображается список выбранных файлов и директорий.
         /// </summary>
         private readonly StackContainer selectedWidget;
 
         /// <summary>
-        /// Создает новый экземпляр файлового менеджера.
+        ///     Создает новый экземпляр файлового менеджера.
         /// </summary>
         /// <param name="maxWidth">Максимальная используемая ширина.</param>
         /// <param name="maxHeight">Максимальная используемая высота.</param>
@@ -79,17 +79,17 @@ namespace FileManager
         public DirectoryInfo? CurrentDirectory { get; private set; }
 
         /// <summary>
-        /// Коллекция выбранных пользователем файлов.
+        ///     Коллекция выбранных пользователем файлов.
         /// </summary>
         public IReadOnlyCollection<string> SelectedFiles => selectedSet;
 
         /// <summary>
-        /// Контейнер, в которомо находятся все виджеты менеджера.
+        ///     Контейнер, в которомо находятся все виджеты менеджера.
         /// </summary>
         public BaseContainer RootContainer { get; }
 
         /// <summary>
-        /// Регистрирует и настраивает все возможные команды.
+        ///     Регистрирует и настраивает все возможные команды.
         /// </summary>
         public void AttachActions()
         {
@@ -97,7 +97,7 @@ namespace FileManager
         }
 
         /// <summary>
-        /// Возвращает действие, котороео добавит указанную запись в список выбранных объектов.
+        ///     Возвращает действие, котороео добавит указанную запись в список выбранных объектов.
         /// </summary>
         /// <param name="entry">Запись, которую потребуется добавить.</param>
         /// <returns>Действие, которое добавит запись.</returns>
@@ -113,7 +113,7 @@ namespace FileManager
                         new KeySelector(ConsoleKey.Spacebar),
                         new KeySelector(ConsoleKey.Enter),
                         new KeySelector(ConsoleKey.Insert),
-                        new KeySelector(ConsoleKey.Delete),
+                        new KeySelector(ConsoleKey.Delete)
                     }, () =>
                     {
                         selectedSet.Remove(entry.FullName);
@@ -126,7 +126,7 @@ namespace FileManager
         }
 
         /// <summary>
-        /// Обновляет список файлов в панели со списком файлов в текущей директории.
+        ///     Обновляет список файлов в панели со списком файлов в текущей директории.
         /// </summary>
         private void UpdateCurrentDir()
         {
@@ -172,7 +172,7 @@ namespace FileManager
         }
 
         /// <summary>
-        /// Отображает некоторые свойства файла.
+        ///     Отображает некоторые свойства файла.
         /// </summary>
         /// <param name="path">Путь к файлу.</param>
         private void ShowInfo(string path)
@@ -191,7 +191,7 @@ namespace FileManager
         }
 
         /// <summary>
-        /// Меняет текущую директорию.
+        ///     Меняет текущую директорию.
         /// </summary>
         /// <param name="to">В какую директорию нужно перейти. null, если к списку дисков.</param>
         public void ChangeDir(string? to)
@@ -229,7 +229,7 @@ namespace FileManager
         }
 
         /// <summary>
-        /// Обновляет левую панель.
+        ///     Обновляет левую панель.
         /// </summary>
         public void Refresh()
         {
@@ -256,7 +256,7 @@ namespace FileManager
         }
 
         /// <summary>
-        /// Отображает пользователю диалог с информацией об ошибке, если таковая произошла.
+        ///     Отображает пользователю диалог с информацией об ошибке, если таковая произошла.
         /// </summary>
         /// <param name="result">Результат выполнения некоторого действия, которое, возможно, обернулось неудачей.</param>
         /// <param name="description">Описание ошибки.</param>
