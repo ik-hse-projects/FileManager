@@ -1,4 +1,4 @@
 [submodule "Thuja"]
 	path = Thuja
-	url = ../Thuja
+	url = https://github.com/ik-hse-projects/Thuja
 	branch = filemanager
